@@ -83,9 +83,12 @@ def simulator(args):
         run(["xcrun", "simctl", "status_bar", udid, "override", "--time", "9:41",
              "--batteryState", "charged", "--batteryLevel", "100"], "statusbar.log", check=False)
         env = {"TEST_ORIENTATION": args.orientation}
-        filters = [] if args.test_scope == "all" else [
-            "-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
-            "-only-testing:HomeworkAppUITests/PerformanceLayoutTests"]
+        filters = {
+            "all": [],
+            "interfaces": ["-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
+                           "-only-testing:HomeworkAppUITests/PerformanceLayoutTests"],
+            "ai": ["-only-testing:HomeworkAppUITests/AIImportFlowTests"],
+        }[args.test_scope]
         run(["xcodebuild", "test", *filters, "-project", f"{APP_NAME}.xcodeproj", "-scheme", APP_NAME,
              "-destination", f"platform=iOS Simulator,id={udid}", "-destination-timeout", "120",
              "-derivedDataPath", "DerivedData", "-resultBundlePath", str(ARTIFACTS / "Tests.xcresult"),
@@ -135,7 +138,7 @@ def main():
     parser.add_argument("--appearance", choices=["light", "dark"], default="light")
     parser.add_argument("--orientation", choices=["portrait", "landscape"], default="portrait")
     parser.add_argument("--runtime", type=int, default=27)
-    parser.add_argument("--test-scope", choices=["all", "interfaces"], default="all")
+    parser.add_argument("--test-scope", choices=["all", "interfaces", "ai"], default="all")
     args = parser.parse_args()
     ARTIFACTS.mkdir(exist_ok=True)
     if args.mode == "device":

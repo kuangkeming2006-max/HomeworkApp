@@ -33,6 +33,8 @@ Manual workflow dispatch supports `coverage=iphone` (iPhone portrait in Light/Da
 
 For a short attachment/accessibility investigation, dispatch with `coverage=focused` and `tests=interfaces`. This runs only the native picker/preview and large-text/scrolling UI classes, and records that scope in device metadata. Coverage and test scopes have separate concurrency groups so diagnostics can finish independently. It is a debugging aid, not final acceptance: retain `tests=all` for the complete hosted/UI regression. Use `coverage=iphone` for iPhone release verification; choose `coverage=full` when validating the complete iPad appearance/orientation matrix as well.
 
+Use `tests=ai` to investigate only the synthetic AI preview/confirmation flow. It retains the mandatory-confirmation, selection, enabled-state and saved-content assertions. Record this targeted scope separately from the complete regression; an AI-only green job is not a full 49-case pass.
+
 ## Outputs
 
 - `domain-linux-*`: raw portable Swift test output.

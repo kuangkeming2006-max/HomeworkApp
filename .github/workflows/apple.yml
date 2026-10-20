@@ -11,9 +11,9 @@ on:
         options: [full, iphone, focused]
         default: full
       tests:
-        description: Test scope (interfaces is for debugging, not final acceptance)
+        description: Test scope (ai/interfaces are targeted debugging)
         type: choice
-        options: [all, interfaces]
+        options: [all, interfaces, ai]
         default: all
 permissions:
   contents: read
