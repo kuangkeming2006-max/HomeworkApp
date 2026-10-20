@@ -4,6 +4,7 @@ import HomeworkDomain
 struct BriefingView: View {
     let store: AssignmentStore
     let history: BriefingHistoryStore
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
@@ -12,7 +13,7 @@ struct BriefingView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     Text(context.date, format: .dateTime.weekday(.wide).month(.wide).day())
                         .font(.subheadline).foregroundStyle(.secondary)
-                    HStack(spacing: 24) {
+                    progressLayout {
                         ZStack {
                             Circle().stroke(.quaternary, lineWidth: 9)
                             Circle().trim(from: 0, to: report.progress).stroke(.tint, style: StrokeStyle(lineWidth: 9, lineCap: .round))
@@ -26,7 +27,15 @@ struct BriefingView: View {
                             Text("Assignments due today, excluding abandoned work.").font(.caption).foregroundStyle(.secondary)
                         }
                     }.accessibilityElement(children: .combine).accessibilityIdentifier("briefing.progress")
-                    Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 20) {
+                    if typeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: 20) {
+                            statistic("Remaining", value: report.remaining, symbol: "checklist", color: .primary)
+                            statistic("Completed today", value: report.completedToday, symbol: "checkmark.circle", color: .green)
+                            statistic("Due within 24 hours", value: report.dueWithin24Hours, symbol: "clock", color: .primary)
+                            statistic("Overdue", value: report.overdue, symbol: "exclamationmark.circle", color: report.overdue > 0 ? .red : .secondary)
+                        }
+                    } else {
+                      Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 20) {
                         GridRow {
                             statistic("Remaining", value: report.remaining, symbol: "checklist", color: .primary)
                             statistic("Completed today", value: report.completedToday, symbol: "checkmark.circle", color: .green)
@@ -35,7 +44,8 @@ struct BriefingView: View {
                             statistic("Due within 24 hours", value: report.dueWithin24Hours, symbol: "clock", color: .primary)
                             statistic("Overdue", value: report.overdue, symbol: "exclamationmark.circle", color: report.overdue > 0 ? .red : .secondary)
                         }
-                    }.frame(maxWidth: .infinity, alignment: .leading)
+                      }.frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     Divider()
                     if let urgent = report.mostUrgent, let task = store.assignment(urgent.id) {
                         Text("Next priority").font(.headline)
@@ -64,6 +74,10 @@ struct BriefingView: View {
             .onChange(of: store.assignments) { _, _ in history.record(BriefingService.report(store.assignments, now: .now)) }
         }
         .navigationTitle("Briefing").accessibilityIdentifier("briefing.page")
+    }
+
+    private var progressLayout: AnyLayout {
+        typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 16)) : AnyLayout(HStackLayout(spacing: 24))
     }
 
     private func statistic(_ label: String, value: Int, symbol: String, color: Color) -> some View {

@@ -7,7 +7,8 @@ final class PerformanceLayoutTests: HomeworkUITestCase {
         let app = XCUIApplication(); app.launchArguments = ["--uitesting", "--fixture-performance"]; app.launch()
         let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 20))
-        let list = app.descendants(matching: .any).matching(identifier: "assignments.list").firstMatch
+        let list = app.collectionViews["assignments.list"]
+        XCTAssertTrue(list.waitForExistence(timeout: 10))
         let start = Date()
         for _ in 0..<3 { list.swipeUp() }
         for _ in 0..<3 { list.swipeDown() }
@@ -29,6 +30,8 @@ final class PerformanceLayoutTests: HomeworkUITestCase {
         navigate("Briefing", app: app)
         XCTAssertTrue(app.buttons["briefing.next"].waitForExistence(timeout: 5))
         capture(app, "Large Briefing")
+        app.swipeUp(); app.swipeUp()
+        capture(app, "Large Briefing statistics")
         navigate("Calendar", app: app)
         XCTAssertTrue(app.buttons["calendar.today"].waitForExistence(timeout: 5))
         capture(app, "Large calendar")

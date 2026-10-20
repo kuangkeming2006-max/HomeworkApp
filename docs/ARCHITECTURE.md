@@ -18,6 +18,9 @@
 | `Features/Settings` | Defaults, provider configuration and backups | 1–5 |
 | Domain `SyncService` | Replaceable no-op boundary, no server or account | 2 |
 | `Services/BackupService` | Validated versioned documents, checksum verification, staged file copies and atomic batch restore | 5 |
+| `Core/State/UndoCoordinator`, domain status/search/classification | Five-second disposition undo, action generations and shared query/display rules | Redesign A–C |
+| `Features/Briefing`, domain `BriefingService` | Separate completion metrics, finite report projections and observed daily snapshots | Redesign D |
+| `Services/LiveActivityService`, `Shared`, `HomeworkWidgets` | Value-only activity contract, reconciliation and embedded WidgetKit extension | Redesign D |
 
 Domain protocols permit replacing persistence, attachments, backups, notifications, HTTP transport, providers and future sync independently. SwiftData uses an explicit versioned schema; an error never authorizes deleting user stores. Editor changes are field patches against the latest stored record so editing in another window does not overwrite unrelated fields.
 
@@ -25,4 +28,20 @@ The deployment target is iOS/iPadOS 26. System SwiftUI navigation, lists and for
 
 Compact-width navigation uses tabs; regular-width navigation uses a sidebar. Task list/detail columns appear when the remaining available width is at least 720 points. Width and horizontal size class determine composition, allowing resized iPad windows to fall back to a navigation stack.
 
+Each sidebar destination has its own stable navigation identity. Switching away from a pushed assignment must not cause SwiftUI to compare its UUID path with another destination's path.
+
+Accessibility text sizes use the wider stack instead of a narrow third column. Deadline metadata can move onto separate lines without splitting each word into a vertical column. Calendar dates retain a seven-column grid, with single-line scaling limited to date numbers and weekday abbreviations; full date/status descriptions remain available to VoiceOver.
+
 Backup format version 1 is a JSON document with `formatVersion`, `exportedAt`, `assignments` and `files`. Dates use Swift Codable's seconds since 2001-01-01 UTC; file contents are base64 and linked by attachment UUID, with length and SHA-256 checked. The file is bounded to 100 MB. Import validates everything before staging unique attachment copies, then saves missing task UUIDs in a single repository transaction. A failed transaction removes only its newly staged files. Reimport preserves existing tasks and tombstones; backup does not serve as a synchronization merge engine. Provider settings and secrets are excluded.
+
+## Redesign data and service boundaries
+
+The original `HomeworkSchemaV1.AssignmentEntity` stays frozen. V2 adds optional status/abandonment columns, then backfills status from the original completion flag in a custom migration. A hosted test creates a real V1 SQLite store and reopens it through the migration plan. Status is authoritative in domain values; the persisted legacy completion flag and encoded backup Boolean remain consistent compatibility mirrors. The store name, attachment directory, bundle ID, preference keys and Keychain identity are preserved.
+
+Undo records only status, completion/abandonment timestamps and deletion state. An action-generation token rejects an obsolete undo even if subsequent status changes return to identical fields. Content edits survive undo, and revisions always increase. Store mutations merge changed records without fetching the entire database. List ordering is cached separately from search filtering; calendar cells read a day index rebuilt for changed records or the screen's shared minute clock.
+
+New-task attachments belong to an editing session until Create succeeds. Cancellation/deinitialization removes only session-owned files. File copying/hashing and cached ImageIO downsampling run in isolated services. Photos and Files are separate native controls; Quick Look is presented by the stable editor Form rather than a virtualized section.
+
+`NotificationCoordinator` incrementally reconciles individual reminders and up to seven finite reports under one total budget of 60 pending requests. Notification actions finish persistence, activity reconciliation and reminder cancellation before returning the system completion callback. Report content uses last known data, and history stores only observed snapshots with their local time zone.
+
+`LiveActivityCoordinator` reconciles at most one final-window countdown through a replaceable client. `ActivityKitClient` uses the installed-SDK-verified `start:` request and handles `.pending`; opaque SDK handles stay inside their async operations. The extension receives Sendable value content and uses native timer views. It never reads the task database and needs no App Group, APNs or backend. Bundle validation checks extension embedding, version alignment and deep links. The extension-free package disables Live Activities while retaining the same app identity and ordinary reminders. Signing, delivery and system-controlled presentation still require the physical checklist.

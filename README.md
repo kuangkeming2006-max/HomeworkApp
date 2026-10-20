@@ -31,6 +31,8 @@ The workflow discovers stable Xcode 27 and available iOS 27 simulator UDIDs. Mis
 
 Manual workflow dispatch supports `coverage=focused` (iPhone portrait + iPad landscape) for incremental debugging; pushes and default dispatch run the full six-configuration matrix. `SDK capability probe` records actual ActivityKit declarations and typechecks modern scheduled starts at the iOS 26 minimum.
 
+For a short attachment/accessibility investigation, dispatch with `coverage=focused` and `tests=interfaces`. This runs only the native picker/preview and large-text/scrolling UI classes, and records that scope in device metadata. It is a debugging aid, not final acceptance: retain `tests=all` for the complete hosted/UI regression and `coverage=full` for release verification.
+
 ## Outputs
 
 - `domain-linux-*`: raw portable Swift test output.

@@ -29,7 +29,7 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
         previews.element(boundBy: 1).tap()
         let closePreview = app.buttons["QLOverlayDoneButtonAccessibilityIdentifier"]
         XCTAssertTrue(closePreview.waitForExistence(timeout: 15))
-        XCTAssertTrue(app.otherElements["QLPDFViewControllerViewAccessibilityIdentifier"].exists,
+        XCTAssertTrue(app.otherElements["QLPDFViewControllerViewAccessibilityIdentifier"].waitForExistence(timeout: 30),
                       "The PDF must render in Quick Look")
         capture(app, "PDF preview")
         closePreview.tap()
