@@ -69,6 +69,18 @@ jobs:
         run: xcodebuild -resolvePackageDependencies -project HomeworkApp.xcodeproj -scheme HomeworkApp > artifacts/resolve.log 2>&1
       - name: Test on discovered simulator and export screenshots
         run: python3 scripts/run_apple.py simulator --family ${{ matrix.family }} --appearance ${{ matrix.appearance }} --orientation ${{ matrix.orientation }}
+      - name: Upload compact debugging evidence
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: review-${{ matrix.family }}-${{ matrix.appearance }}-${{ matrix.orientation }}-${{ github.run_attempt }}
+          path: |
+            artifacts/xcodebuild.log
+            artifacts/test-summary.json
+            artifacts/device.json
+            artifacts/warnings.txt
+            artifacts/screenshots/*.png
+          retention-days: 14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

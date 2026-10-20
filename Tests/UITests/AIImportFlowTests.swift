@@ -19,8 +19,13 @@ final class AIImportFlowTests: XCTestCase {
         let second = app.switches["ai.select.1"]
         for _ in 0..<5 where !second.isHittable { app.swipeUp() }
         XCTAssertTrue(second.isHittable)
-        second.tap()
-        XCTAssertTrue(app.buttons["ai.confirm"].isEnabled)
+        // SwiftUI exposes the label and switch as one wide accessibility frame.
+        // Its center is the label, which does not activate the native switch on iOS 27.
+        second.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        XCTAssertEqual(second.value as? String, "0")
+        let save = app.buttons["ai.confirm"]
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "enabled == true"), object: save)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 5), .completed)
         app.buttons["ai.confirm"].tap()
         let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 5))

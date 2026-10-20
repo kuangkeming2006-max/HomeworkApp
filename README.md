@@ -31,6 +31,7 @@ The workflow discovers stable Xcode 27 and available iOS 27 simulator UDIDs. Mis
 
 - `domain-linux-*`: raw portable Swift test output.
 - `simulator-<family>-<appearance>-<orientation>-*`: raw `xcodebuild.log`, warnings, `.xcresult`, PNG attachments, selected device/SDK metadata and available app crash logs.
+- `review-<family>-<appearance>-<orientation>-*`: compact build log, test summary, device metadata and PNGs for quick debugging without downloading the full result bundle. App logs and available crash reports are collected separately; XCTest's whole-system diagnostic archive is disabled because it timed out for 600 seconds after otherwise finished failing tests.
 - `unsigned-device-*`: arm64 iPhoneOS `.app.zip` and `Payload`-structured unsigned `.ipa`, raw build log and installation notes. Simulator apps cannot be installed on a device.
 
 The six simulator jobs cover phone portrait and tablet portrait/landscape in both appearances. Tests cover persistence, backup/file integrity, reminder reconciliation, AI requests/parsing/confirmation, task workflows, sorting, calendar and settings. CI uses synthetic inputs only and never calls a real LLM. Artifacts expire after 14 days. GitHub private-repository macOS minute quotas still apply; the workflow caps concurrency and timeouts.

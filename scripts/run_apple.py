@@ -78,6 +78,7 @@ def simulator(args):
              "-destination", f"platform=iOS Simulator,id={udid}", "-destination-timeout", "120",
              "-derivedDataPath", "DerivedData", "-resultBundlePath", str(ARTIFACTS / "Tests.xcresult"),
              "-parallel-testing-enabled", "NO", "CODE_SIGNING_ALLOWED=NO",
+             "-collect-test-diagnostics", "never",
              "-test-timeouts-enabled", "YES", "-maximum-test-execution-time-allowance", "180",
              f"TEST_ORIENTATION={args.orientation}"], "xcodebuild.log", extra_env=env)
     finally:
