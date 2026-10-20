@@ -29,9 +29,9 @@ Based on [hoangnd107/ios-swiftui-app-template](https://github.com/hoangnd107/ios
 
 The workflow discovers stable Xcode 27 and available iOS 27 simulator UDIDs. Missing SDKs/runtimes cause explicit failures, with available discovery output uploaded. It never silently switches to an older toolchain.
 
-Manual workflow dispatch supports `coverage=focused` (iPhone portrait + iPad landscape) for incremental debugging; pushes and default dispatch run the full six-configuration matrix. `SDK capability probe` records actual ActivityKit declarations and typechecks modern scheduled starts at the iOS 26 minimum.
+Manual workflow dispatch supports `coverage=iphone` (iPhone portrait in Light/Dark) for the current iPhone-first delivery, and `coverage=focused` (iPhone portrait + iPad landscape) for incremental debugging. All hosted/UI tests run in either mode unless a narrower test scope is explicitly selected; pushes and default dispatch retain the full six-configuration matrix. `SDK capability probe` records actual ActivityKit declarations and typechecks modern scheduled starts at the iOS 26 minimum.
 
-For a short attachment/accessibility investigation, dispatch with `coverage=focused` and `tests=interfaces`. This runs only the native picker/preview and large-text/scrolling UI classes, and records that scope in device metadata. Debug and complete test scopes have separate concurrency groups so diagnostics can finish independently. It is a debugging aid, not final acceptance: retain `tests=all` for the complete hosted/UI regression and `coverage=full` for release verification.
+For a short attachment/accessibility investigation, dispatch with `coverage=focused` and `tests=interfaces`. This runs only the native picker/preview and large-text/scrolling UI classes, and records that scope in device metadata. Coverage and test scopes have separate concurrency groups so diagnostics can finish independently. It is a debugging aid, not final acceptance: retain `tests=all` for the complete hosted/UI regression. Use `coverage=iphone` for iPhone release verification; choose `coverage=full` when validating the complete iPad appearance/orientation matrix as well.
 
 ## Outputs
 

@@ -8,7 +8,7 @@ on:
       coverage:
         description: Simulator coverage
         type: choice
-        options: [full, focused]
+        options: [full, iphone, focused]
         default: full
       tests:
         description: Test scope (interfaces is for debugging, not final acceptance)
@@ -18,7 +18,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: apple-${{ github.event_name }}-${{ github.ref }}-${{ inputs.tests || 'all' }}
+  group: apple-${{ github.event_name }}-${{ github.ref }}-${{ inputs.coverage || 'full' }}-${{ inputs.tests || 'all' }}
   cancel-in-progress: true
 jobs:
   plan:
@@ -32,11 +32,13 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os
-          configurations = [
-              dict(family="phone", appearance="light", orientation="portrait"),
-              dict(family="pad", appearance="light", orientation="landscape"),
-          ]
-          if os.environ.get("COVERAGE") != "focused":
+          coverage = os.environ.get("COVERAGE", "full")
+          configurations = [dict(family="phone", appearance="light", orientation="portrait")]
+          if coverage == "iphone":
+              configurations += [dict(family="phone", appearance="dark", orientation="portrait")]
+          else:
+              configurations += [dict(family="pad", appearance="light", orientation="landscape")]
+          if coverage not in {"focused", "iphone"}:
               configurations += [
                   dict(family="phone", appearance="dark", orientation="portrait"),
                   dict(family="pad", appearance="light", orientation="portrait"),
