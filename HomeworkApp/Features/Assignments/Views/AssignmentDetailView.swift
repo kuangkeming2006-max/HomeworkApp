@@ -1,0 +1,70 @@
+import SwiftUI
+import HomeworkDomain
+
+struct AssignmentDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var editor: AssignmentEditor
+
+    init(assignment: Assignment, isNew: Bool = false, store: AssignmentStore) {
+        _editor = State(initialValue: AssignmentEditor(assignment: assignment, isNew: isNew, store: store))
+    }
+
+    var body: some View {
+        Form {
+            Section("Assignment") {
+                TextField("Title", text: binding(\.title))
+                    .accessibilityIdentifier("editor.title")
+                TextField("Course", text: optionalBinding(\.course))
+                    .accessibilityIdentifier("editor.course")
+                Picker("Priority", selection: binding(\.priority)) {
+                    ForEach(Priority.allCases) { Text($0.label).tag($0) }
+                }
+                .accessibilityIdentifier("editor.priority")
+            }
+            Section("Deadline") {
+                DatePicker("Deadline", selection: binding(\.dueDate), displayedComponents: [.date, .hourAndMinute])
+                    .environment(\.timeZone, TimeZone(identifier: editor.draft.dueTimeZone) ?? .current)
+                    .accessibilityIdentifier("editor.deadline")
+                Picker("Time zone", selection: binding(\.dueTimeZone)) {
+                    ForEach(TimeZone.knownTimeZoneIdentifiers, id: \.self) { Text($0).tag($0) }
+                }
+                .accessibilityIdentifier("editor.timezone")
+            }
+            Section("Notes") {
+                TextEditor(text: optionalBinding(\.notes)).frame(minHeight: 120)
+                    .accessibilityLabel("Notes").accessibilityIdentifier("editor.notes")
+            }
+            if !editor.isNew {
+                Section {
+                    Toggle("Completed", isOn: Binding(get: { editor.draft.isCompleted }, set: { editor.setCompleted($0) }))
+                        .accessibilityIdentifier("editor.completed")
+                }
+            }
+            Section {
+                if let message = editor.validationMessage { Text(message).foregroundStyle(.red) }
+                else if !editor.isNew { Text("Changes save automatically.").foregroundStyle(.secondary) }
+            }
+        }
+        .navigationTitle(editor.isNew ? "New assignment" : "Assignment")
+        .navigationBarTitleDisplayMode(.inline)
+        .accessibilityIdentifier("editor.form")
+        .toolbar {
+            if editor.isNew {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create") { if editor.create() { dismiss() } }
+                        .disabled(!editor.canSave).accessibilityIdentifier("editor.save")
+                }
+            }
+        }
+        .onDisappear { editor.flush() }
+    }
+
+    private func binding<Value>(_ path: WritableKeyPath<Assignment, Value>) -> Binding<Value> {
+        Binding(get: { editor.draft[keyPath: path] }, set: { editor.set(path, $0) })
+    }
+
+    private func optionalBinding(_ path: WritableKeyPath<Assignment, String?>) -> Binding<String> {
+        Binding(get: { editor.draft[keyPath: path] ?? "" }, set: { editor.set(path, $0.isEmpty ? nil : $0) })
+    }
+}

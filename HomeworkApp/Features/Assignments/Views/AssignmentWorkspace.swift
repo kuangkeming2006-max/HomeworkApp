@@ -1,0 +1,41 @@
+import SwiftUI
+
+struct AssignmentWorkspace: View {
+    let store: AssignmentStore
+    @State private var selectedID: UUID?
+    @State private var path: [UUID] = []
+
+    var body: some View {
+        GeometryReader { geometry in
+            if geometry.size.width >= 720 {
+                HStack(spacing: 0) {
+                    NavigationStack {
+                        AssignmentListView(store: store) { selectedID = $0 }
+                    }
+                    .frame(width: min(380, geometry.size.width * 0.42))
+                    Divider()
+                    NavigationStack {
+                        if let selectedID, let assignment = store.assignment(selectedID) {
+                            AssignmentDetailView(assignment: assignment, store: store)
+                                .id(selectedID)
+                        } else {
+                            ContentUnavailableView("Select an assignment", systemImage: "doc.text",
+                                                   description: Text("Choose an assignment to see its details."))
+                        }
+                    }
+                }
+            } else {
+                NavigationStack(path: $path) {
+                    AssignmentListView(store: store) { path.append($0) }
+                        .navigationDestination(for: UUID.self) { id in
+                            if let assignment = store.assignment(id) {
+                                AssignmentDetailView(assignment: assignment, store: store).id(id)
+                            } else {
+                                ContentUnavailableView("Assignment deleted", systemImage: "trash")
+                            }
+                        }
+                }
+            }
+        }
+    }
+}

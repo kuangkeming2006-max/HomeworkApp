@@ -22,6 +22,26 @@ struct AppNavigation: View {
     let container: AppContainer
 
     var body: some View {
+        Group {
+            if let store = container.store {
+                navigation(store: store)
+                    .alert("Unable to save", isPresented: Binding(
+                        get: { store.errorMessage != nil },
+                        set: { if !$0 { store.errorMessage = nil } })) {
+                            Button("OK", role: .cancel) { store.errorMessage = nil }
+                        } message: { Text(store.errorMessage ?? "Please try again.") }
+            } else {
+                ContentUnavailableView {
+                    Label("Unable to open your data", systemImage: "externaldrive.badge.exclamationmark")
+                } description: { Text(container.startupError ?? "Please try reopening the app.") }
+                  actions: { Button("Try again") { container.openStore() } }
+            }
+        }
+        .environment(\.locale, Locale(identifier: "en_US"))
+    }
+
+    @ViewBuilder
+    private func navigation(store: AssignmentStore) -> some View {
         if horizontalSizeClass == .regular {
             NavigationSplitView {
                 List(AppSection.allCases, selection: $selection) { section in
@@ -31,13 +51,13 @@ struct AppNavigation: View {
                 }
                 .navigationTitle("Homework")
             } detail: {
-                NavigationStack { destination(selection ?? .assignments) }
+                destination(selection ?? .assignments, store: store)
             }
         } else {
             TabView {
                 ForEach(AppSection.allCases) { section in
                     Tab {
-                        NavigationStack { destination(section) }
+                        destination(section, store: store)
                     } label: {
                         Label(section.rawValue, systemImage: section.symbol)
                             .accessibilityIdentifier(section.identifier)
@@ -48,11 +68,11 @@ struct AppNavigation: View {
     }
 
     @ViewBuilder
-    private func destination(_ section: AppSection) -> some View {
+    private func destination(_ section: AppSection, store: AssignmentStore) -> some View {
         switch section {
-        case .assignments: AssignmentListView()
-        case .calendar: CalendarView()
-        case .settings: SettingsView(version: container.version)
+        case .assignments: AssignmentWorkspace(store: store)
+        case .calendar: NavigationStack { CalendarView(store: store) }
+        case .settings: NavigationStack { SettingsView(version: container.version) }
         }
     }
 }

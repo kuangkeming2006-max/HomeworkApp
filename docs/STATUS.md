@@ -15,3 +15,7 @@ Verification in progress: nine Windows/Linux build-tool tests and the portable S
 5. Phase 5: backup/restore, accessibility, responsive layout review and complete regression/device checklists.
 
 Each phase requires its own Git commit and relevant passing checks. The placeholder screens in Phase 1 do not satisfy the full app acceptance criteria.
+
+## Phase 2 — implementation submitted for CI
+
+Implemented: complete domain assignment values and service boundaries; versioned SwiftData schema and migration plan; transactional validated batch saves; create/edit with debounced auto-save; completion, restoration and tombstone deletion; Upcoming/Completed/All filters; priority/deadline sorting; interactive month grid with task markers, day selection and date-based creation; adaptive list/detail panes at available widths. Repository, editor, DST, filtering, sorting and month-grid tests have been added. Apple compilation and feature test results are pending; reminders, attachment storage, AI and backup are subsequent phases.

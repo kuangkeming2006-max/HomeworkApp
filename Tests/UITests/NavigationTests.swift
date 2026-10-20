@@ -16,7 +16,15 @@ final class NavigationTests: XCTestCase {
         capture("Assignments")
 
         navigate("Calendar", in: app)
-        XCTAssertTrue(app.staticTexts["Your deadlines, together"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["calendar.month"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["calendar.next"].exists)
+        XCTAssertTrue(app.buttons["calendar.previous"].exists)
+        XCTAssertTrue(app.staticTexts["No assignments this day"].exists)
+        let month = app.staticTexts["calendar.month"].label
+        app.buttons["calendar.next"].tap()
+        XCTAssertNotEqual(app.staticTexts["calendar.month"].label, month)
+        app.buttons["calendar.previous"].tap()
+        XCTAssertEqual(app.staticTexts["calendar.month"].label, month)
         capture("Calendar")
 
         navigate("Settings", in: app)

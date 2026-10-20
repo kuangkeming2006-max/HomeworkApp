@@ -57,6 +57,7 @@ targets:
       - Tests/IntegrationTests
     dependencies:
       - target: HomeworkApp
+      - package: HomeworkDomain
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
