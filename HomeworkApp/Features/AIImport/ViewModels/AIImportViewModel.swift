@@ -3,6 +3,7 @@ import Observation
 import PhotosUI
 import SwiftUI
 import UIKit
+import ImageIO
 import HomeworkDomain
 
 @Observable @MainActor
@@ -28,18 +29,20 @@ final class AIImportViewModel {
 
     func loadImages(_ items: [PhotosPickerItem]) async {
         guard !busy else { return }
+        busy = true
+        defer { busy = false }
         do {
             var selected: [LLMImage] = []
             for item in items.prefix(4) {
                 guard let raw = try await item.loadTransferable(type: Data.self), raw.count <= 25 * 1024 * 1024,
-                      let image = UIImage(data: raw) else { throw LLMError.input }
-                let longest = max(image.size.width, image.size.height)
-                let scale = min(1, 2000 / max(1, longest))
-                let size = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-                let format = UIGraphicsImageRendererFormat(); format.scale = 1
-                let resized = UIGraphicsImageRenderer(size: size, format: format).image { _ in
-                    image.draw(in: CGRect(origin: .zero, size: size))
-                }
+                      let source = CGImageSourceCreateWithData(raw as CFData, nil),
+                      let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceCreateThumbnailWithTransform: true,
+                        kCGImageSourceThumbnailMaxPixelSize: 2000,
+                        kCGImageSourceShouldCacheImmediately: true
+                      ] as CFDictionary) else { throw LLMError.input }
+                let resized = UIImage(cgImage: thumbnail)
                 guard let data = resized.jpegData(compressionQuality: 0.8) else { throw LLMError.input }
                 selected.append(LLMImage(data: data, mimeType: "image/jpeg"))
             }

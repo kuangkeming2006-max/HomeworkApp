@@ -51,6 +51,13 @@ public struct Assignment: Codable, Equatable, Identifiable, Sendable {
         guard isCompleted == (completedAt != nil), localRevision > 0 else {
             throw AssignmentError.invalid("The assignment has inconsistent completion information.")
         }
+        guard createdAt.timeIntervalSince1970.isFinite, updatedAt.timeIntervalSince1970.isFinite,
+              updatedAt >= createdAt, completedAt.map({ $0.timeIntervalSince1970.isFinite }) ?? true,
+              deletedAt.map({ $0.timeIntervalSince1970.isFinite }) ?? true,
+              attachments.count <= 100, Set(attachments.map(\.id)).count == attachments.count else {
+            throw AssignmentError.invalid("The assignment has invalid timestamps or attachment information.")
+        }
+        for attachment in attachments { try attachment.validate() }
         try reminder.validate()
     }
 }
@@ -69,6 +76,16 @@ public struct AttachmentReference: Codable, Equatable, Identifiable, Sendable {
         self.id = id; self.name = name; self.relativePath = relativePath
         self.contentType = contentType; self.byteCount = byteCount
         self.sha256 = sha256; self.createdAt = createdAt
+    }
+
+    public func validate() throws {
+        guard !name.isEmpty, name.count <= 255, !relativePath.isEmpty, relativePath.count <= 255,
+              relativePath != ".", relativePath != "..", !relativePath.contains("/"), !relativePath.contains("\\"),
+              !contentType.isEmpty, contentType.count <= 200, byteCount > 0, byteCount <= 25 * 1024 * 1024,
+              sha256.count == 64, sha256.allSatisfy({ $0.isASCII && $0.isHexDigit }),
+              createdAt.timeIntervalSince1970.isFinite else {
+            throw AssignmentError.invalid("The attachment metadata is invalid.")
+        }
     }
 }
 

@@ -1,6 +1,17 @@
 # Homework
 
-Native SwiftUI homework deadline manager for iPhone and iPad. Development happens on Windows/Linux; GitHub Actions provides the Apple toolchain. **Currently Phase 1 infrastructure, not a finished task manager.** See [status](docs/STATUS.md).
+Native SwiftUI homework deadline manager for iPhone and iPad. Development happens on Windows/Linux; GitHub Actions provides Xcode 27 and iOS 27 simulators. The deployment minimum is iOS/iPadOS 26. See [verified delivery status](docs/STATUS.md).
+
+## Features
+
+- Offline SwiftData assignments with automatic editing, completion/restoration, deletion, course/notes and priority/deadline sorting.
+- Interactive month calendar, day markers and creation for the selected day; adaptive tabs, sidebar and list/detail panes.
+- Independent preset/custom reminders, a new-task default, notification permission controls and bounded scheduling.
+- Copied persistent Photos/Files attachments, duplicate detection, Quick Look preview and removal.
+- Optional custom HTTPS Chat Completions provider, Keychain API key, text/image recognition and mandatory editable confirmation. Ambiguous dates cannot be silently saved.
+- Versioned local backup/restore including attachments, integrity validation and preservation of existing assignments.
+
+No login, VPS, cloud synchronization or runtime third-party dependency. Only optional AI requests use the network. See the [user guide](docs/USER_GUIDE.md).
 
 Based on [hoangnd107/ios-swiftui-app-template](https://github.com/hoangnd107/ios-swiftui-app-template) at `ee99d6508ce6d3a75a12b0c3fff8ac5089edf0f2`. Its XcodeGen, unsigned iPhoneOS build, Payload packaging and tag release design are retained and extended. MIT attribution is preserved in [LICENSE](LICENSE). See [integration decisions](docs/TEMPLATE.md).
 
@@ -10,7 +21,7 @@ Based on [hoangnd107/ios-swiftui-app-template](https://github.com/hoangnd107/ios
 2. Edit Swift sources and `project.yml`. The generated `.xcodeproj` stays out of Git.
 3. Run `python -m unittest discover -s scripts/tests -v`. With Swift 6 installed, also run `swift test --package-path Packages/HomeworkDomain`.
 4. Commit and push. The **Apple build and screenshots** workflow runs portable tests, Apple tests and an unsigned device build.
-5. Use `gh run list`, `gh run view RUN_ID --log-failed`, then `gh run download RUN_ID --dir artifacts/RUN_ID`. Inspect logs and real PNGs before claiming success.
+5. Use `gh run list`, `gh run view RUN_ID --log-failed`, then `gh run download RUN_ID --dir artifacts/RUN_ID`. Fix actual compiler/test errors before rerunning. Screenshots are collected automatically; feature work need not wait for cosmetic refinement.
 
 `python scripts/inspect_ci.py` shows the latest run; add `--run RUN_ID --download` after completion to save run metadata, raw Actions logs, test summary JSON and all artifacts together. It performs no retries or source changes.
 
@@ -22,7 +33,7 @@ The workflow discovers stable Xcode 27 and available iOS 27 simulator UDIDs. Mis
 - `simulator-<family>-<appearance>-<orientation>-*`: raw `xcodebuild.log`, warnings, `.xcresult`, PNG attachments, selected device/SDK metadata and available app crash logs.
 - `unsigned-device-*`: arm64 iPhoneOS `.app.zip` and `Payload`-structured unsigned `.ipa`, raw build log and installation notes. Simulator apps cannot be installed on a device.
 
-The six screenshot jobs cover phone portrait and tablet portrait/landscape in both appearances. Builds use synthetic data only. Artifacts expire after 14 days. GitHub private-repository macOS minute quotas still apply; the workflow caps concurrency and timeouts.
+The six simulator jobs cover phone portrait and tablet portrait/landscape in both appearances. Tests cover persistence, backup/file integrity, reminder reconciliation, AI requests/parsing/confirmation, task workflows, sorting, calendar and settings. CI uses synthetic inputs only and never calls a real LLM. Artifacts expire after 14 days. GitHub private-repository macOS minute quotas still apply; the workflow caps concurrency and timeouts.
 
 ## Releases and installation
 

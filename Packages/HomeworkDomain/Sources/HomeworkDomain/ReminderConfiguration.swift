@@ -12,7 +12,7 @@ public struct ReminderConfiguration: Codable, Equatable, Hashable, Sendable {
     public init(amount: Int, unit: Unit) { self.amount = amount; self.unit = unit }
 
     public var label: String {
-        amount == 0 ? "None" : "\(amount) \(unit.rawValue) before"
+        amount == 0 ? "None" : "\(amount) \(amount == 1 ? String(unit.rawValue.dropLast()) : unit.rawValue) before"
     }
 
     public static let presets: [Self] = [

@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import HomeworkDomain
 
-/// The only composition root. Platform services will be injected here in later phases.
+/// Composition root for replaceable platform services and shared window state.
 @Observable @MainActor
 final class AppContainer {
     let version = "0.1.0"
@@ -12,6 +12,7 @@ final class AppContainer {
     let preferences = AppPreferences()
     let notifications = NotificationCoordinator(client: LocalNotificationClient())
     private(set) var attachmentService: (any AttachmentService)?
+    private(set) var backupService: (any BackupService)?
     let secrets: any SecretStore = KeychainSecretStore()
     let providerBuilder: LLMProviderBuilder = { configuration, key in
         ChatCompletionsProvider(configuration: configuration, apiKey: key, transport: URLSessionTransport())
@@ -25,8 +26,14 @@ final class AppContainer {
             let database = try SwiftDataAssignmentRepository.makeContainer(inMemory: testing)
             let repository = SwiftDataAssignmentRepository(container: database)
             store = try AssignmentStore(repository: repository)
+            #if DEBUG
+            if testing && ProcessInfo.processInfo.arguments.contains("--fixture-assignments") {
+                try store?.save(UITestFixtures.assignments())
+            }
+            #endif
             store?.defaultReminder = preferences.defaultReminder
             attachmentService = try? LocalAttachmentService()
+            if let attachmentService { backupService = LocalBackupService(attachments: attachmentService) }
             store?.didChange = { [weak self] in self?.refreshServices() }
             preferences.didChange = { [weak self] in
                 guard let self else { return }

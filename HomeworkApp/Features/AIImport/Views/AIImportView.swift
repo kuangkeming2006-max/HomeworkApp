@@ -26,6 +26,7 @@ struct AIImportView: View {
                     Button("Remove images", role: .destructive) { model.clearImages(); selectedPhotos = [] }
                 }
             }
+            .disabled(model.busy)
             Section {
                 Button("Review assignments") { model.analyze() }
                     .disabled(model.busy).accessibilityIdentifier("ai.analyze")

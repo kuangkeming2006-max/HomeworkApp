@@ -13,6 +13,12 @@ struct SettingsView: View {
                 NavigationLink("AI provider") { AISettingsView(container: container) }
                     .accessibilityIdentifier("settings.ai")
             }
+            if let store = container.store, let backup = container.backupService {
+                Section("Data") {
+                    NavigationLink("Backup and restore") { BackupView(store: store, service: backup) }
+                        .accessibilityIdentifier("settings.backup")
+                }
+            }
             Section("Notifications") {
                 LabeledContent("Permission", value: permissionText)
                 if container.notifications.permission == .notDetermined {
