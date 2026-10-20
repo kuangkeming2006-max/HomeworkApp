@@ -1,35 +1,35 @@
-# Delivery status
+# Delivery status — v0.1.0
 
-## Phase 1 — infrastructure
+Application source/tag: `97691288b0f91caaa6d655e626a920ceb92b6da2` / `v0.1.0`.
 
-Implemented locally: template integration, modular minimal app, adaptive navigation, domain package, XcodeGen specification, Linux/domain tests, hosted Apple integration/UI tests, six screenshot configurations, unsigned device packaging and draft release workflow.
+[Final Apple CI run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39391550713) completed successfully on 2026-10-20, attempt 2. All nine jobs passed. [The actual release workflow](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39393572075) also passed and created a draft release containing the unsigned IPA.
 
-Verified: real Xcode 27/iOS 27 arm64 device compilation, simulator launch, hosted tests, six appearance/orientation configurations, diagnostics and unsigned IPA packaging. Run `39384598013` passed every job. Screenshot-only refinements no longer gate feature work, per the user's instruction. Physical-device installation is unverified.
+## Implemented stages
 
-## Required next gates
+| Stage | Delivered functionality |
+| --- | --- |
+| 1 — Infrastructure | Inspected/pinned upstream template; retained MIT attribution, XcodeGen and unsigned packaging/release design; canonical project.yml; real SDK/simulator discovery; diagnostics and screenshot artifacts. |
+| 2 — Core | Foundation-only domain package; versioned SwiftData; transactional CRUD; debounced field-patch editing; completion/restoration/tombstones; priority/deadline sorting; interactive calendar; adaptive tabs/sidebar/list-detail panes; replaceable sync boundary. |
+| 3 — Reminders/attachments | Independent presets/custom lead times and defaults; explicit permission handling; bounded earliest-first scheduling; cancellation/reconciliation; security-scoped copied files; duplicate detection, Quick Look, removal and delayed orphan cleanup. |
+| 4 — AI | Device-local Keychain key; custom HTTPS endpoint/model; text/image requests; bounded downsampled images; strict JSON/schema/date validation; editable multiple candidates and explicit confirmation; optional JSON/vision settings and connection feedback. |
+| 5 — Refinement/backup | Versioned self-contained backups with attachment hashes; import preview; preservation of existing UUIDs/tombstones; staged copies and transactional restore/cleanup; expanded regression tests; English documentation and free-account installation instructions. |
 
-1. Preserve passing infrastructure while implementing functionality. Keep automatic screenshot collection without blocking feature work on visual refinements.
-2. Phase 2: versioned SwiftData, domain models, CRUD, filters/sorting, interactive calendar, sync interface.
-3. Phase 3: independent reminder policy/scheduling, attachment storage and preview.
-4. Phase 4: Keychain, custom HTTPS provider, strict text/image parsing and confirmation.
-5. Phase 5: backup/restore, accessibility, responsive layout review and complete regression/device checklists.
+Every stage has its own Git commit. Ordinary task management stays offline; no account, backend or paid Apple membership is required by the app.
 
-Each phase has its own Git commit and relevant checks. Current functionality replaces the initial placeholder screens.
+## Actual verification
 
-## Phase 2 — verified
+- 13 build-tool tests passed on Windows and CI.
+- 15 portable Swift tests passed on Linux, covering sorting/filtering, validation, calendar/DST, reminders, AI request/parsing and backup structure.
+- Each of six simulator configurations passed 19 hosted integration/UI tests: iPhone portrait and iPad portrait/landscape, Light/Dark. Main-page navigation/screenshot capture explicitly sets the requested orientation. Full Stage Manager resizing, VoiceOver and Dynamic Type review remain device checks.
+- Hosted tests cover disk persistence, merging editor changes, auto-save, file lifecycle/traversal, notification reconciliation, AI confirmation, secret/config separation, backup restore, corrupt imports, duplicate import and failed-save cleanup.
+- UI tests cover creation, editing, completion/restoration, deletion, sorting, calendar navigation, reminder/attachment controls, AI preview/selection/save and settings.
+- Stable Xcode 27.0 (`27A266a`), iOS 27.0 SDK and arm64 iPhoneOS build succeeded with no build warnings. Built Info.plist confirms deployment minimum 26.0, both device families and multiple-scene support. iOS 26 runtime execution was not performed.
+- PNGs, device metadata, raw logs, test summaries, .xcresult and available crash diagnostics are in Actions artifacts. Screenshot-only refinement was deprioritized at the user's request; this is not a pixel-perfect visual certification.
 
-Implemented: complete domain assignment values and service boundaries; versioned SwiftData schema and migration plan; transactional validated batch saves; create/edit with debounced auto-save; completion, restoration and tombstone deletion; Upcoming/Completed/All filters; priority/deadline sorting; interactive month grid with task markers, day selection and date-based creation; adaptive list/detail panes at available widths. Repository, editor, DST, filtering, sorting and month-grid tests pass. Real CI run `39384598013` is fully successful for commit `bbcc08b`, including Linux, unsigned arm64 device build and all six iPhone/iPad configurations.
+Attempt 1 had one failure in the final explicit simulator-app termination call after the task-edit flow. No app crash report was available; other configurations passed. A single rerun of that failed job on a clean runner passed all 19 tests with identical source and assertions. Track this simulator termination flake if it recurs. There were no automatic unbounded retries.
 
-## Phase 3 — verified
+## Installation and remaining physical checks
 
-Independent per-task reminders, preset/custom lead amounts, new-task defaults, explicit notification permission controls, serialized bounded scheduling (60 slots, preserving unrelated requests), completion/deletion cancellation and foreground/time-change reconciliation are implemented. Past reminder times are skipped and deferred reminders are exposed in Settings. Attachments use persistent copied files, security-scoped imports, size limits, SHA-256 duplicate detection per task, PhotosPicker, Files import, Quick Look preview, explicit removal and delayed orphan cleanup. Notification and file lifecycle integration tests have been added. Physical notification delivery remains a device check.
+Use the unsigned IPA from the matching Actions artifact or the v0.1.0 draft release, then follow [installation](INSTALLATION.md). Unsigned packaging is verified; free-account signing/refresh, actual notification delivery, third-party file-provider sharing, real provider recognition and window/accessibility behavior still require [physical checks](DEVICE_TESTS.md). CI uses only synthetic data and no real API key or private attachments.
 
-Real CI run `39386661203` passed all nine jobs for commit `424d652`, including all six simulator configurations and unsigned iPhoneOS packaging.
-
-## Phase 4 — implementation submitted for CI
-
-Device-local Keychain storage, custom HTTPS Chat Completions endpoint/model configuration, optional image/JSON capability settings and a connection test are implemented. Text and bounded JPEG image inputs produce strictly validated candidates. Current date/time zone are supplied explicitly; missing/past dates and contradictory offsets require confirmation. The preview supports editing and selecting multiple assignments, and nothing is persisted before explicit confirmation. Requests use ephemeral URLSession, system TLS, timeouts, size bounds and no redirects. CI uses a deterministic mock provider through the real parser; no external LLM or private credentials are used. Run `39387914788` passed device compilation, Linux domain tests and hosted AI confirmation tests. Its UI test targeted the center of SwiftUI's wide switch accessibility frame, hitting the label without changing the native switch; the real simulator recording confirmed it. The test now targets the switch and asserts its value before checking Save. Final regression is pending.
-
-## Phase 5 — implementation submitted for CI
-
-Versioned 100 MB JSON backups include task records and attachments, validate all metadata/lengths/SHA-256 checksums before import, preview missing/duplicate UUID counts, preserve existing tasks and tombstones, stage unique file copies and restore in one repository transaction. Failures clean only newly staged copies. Domain and integration tests cover corrupted backups, full restore, duplicate import and failed-save cleanup. AI photos use ImageIO downsampling. Additional UI tests cover priority/deadline order, deletion, reminders, attachment controls and provider/backup settings. English user, maintenance and free-account installation documentation is included. Full final regression is pending; physical-device signing, actual delivery, external file-provider sharing, accessibility and resized windows remain device checks.
+The repository was made public with the user's explicit approval after GitHub blocked private-repository jobs for account payment/spending limits. Standard public Actions execution then resumed. Sources, build scripts and diagnostics remain reviewable from Windows/Linux.
