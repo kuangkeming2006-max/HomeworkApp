@@ -28,7 +28,7 @@ The deployment target is iOS/iPadOS 26. System SwiftUI navigation, lists and for
 
 Compact-width navigation uses tabs; regular-width navigation uses a sidebar. Task list/detail columns appear when the remaining available width is at least 720 points. Width and horizontal size class determine composition, allowing resized iPad windows to fall back to a navigation stack.
 
-Each sidebar destination has its own stable navigation identity. Switching away from a pushed assignment must not cause SwiftUI to compare its UUID path with another destination's path.
+Each sidebar destination has its own stable navigation identity. The task workspace uses Apple's [type-erased NavigationPath](https://developer.apple.com/documentation/swiftui/navigationpath) so split-column transitions can reconcile navigation data of different types. A UUID-only array must not be shared with the sidebar's destination path. Switching away from a pushed assignment is covered by the large-text UI regression.
 
 Accessibility text sizes use the wider stack instead of a narrow third column. Deadline metadata can move onto separate lines without splitting each word into a vertical column. Calendar dates retain a seven-column grid, with single-line scaling limited to date numbers and weekday abbreviations; full date/status descriptions remain available to VoiceOver.
 

@@ -9,7 +9,8 @@ struct AssignmentWorkspace: View {
     let store: AssignmentStore
     var request: AssignmentNavigationRequest? = nil
     @State private var selectedID: UUID?
-    @State private var path: [UUID] = []
+    // Split columns share navigation machinery with sidebar destinations of other types.
+    @State private var path = NavigationPath()
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -17,7 +18,7 @@ struct AssignmentWorkspace: View {
             if geometry.size.width >= 720 && !typeSize.isAccessibilitySize {
                 HStack(spacing: 0) {
                     NavigationStack {
-                        AssignmentListView(store: store) { selectedID = $0; path = [$0] }
+                        AssignmentListView(store: store) { selectedID = $0; path = NavigationPath([$0]) }
                     }
                     .frame(width: min(380, geometry.size.width * 0.42))
                     Divider()
@@ -47,7 +48,7 @@ struct AssignmentWorkspace: View {
         .onChange(of: request, initial: true) { _, request in
             guard let id = request?.assignmentID else { return }
             selectedID = id
-            path = [id]
+            path = NavigationPath([id])
         }
     }
 }
