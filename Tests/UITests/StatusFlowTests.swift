@@ -2,6 +2,21 @@ import XCTest
 
 @MainActor
 final class StatusFlowTests: HomeworkUITestCase {
+    func testShortAndCancelledSwipesPreserveAssignments() {
+        continueAfterFailure = false
+        let app = XCUIApplication(); app.launchArguments = ["--uitesting", "--fixture-assignments"]; app.launch()
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'"))
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15))
+        let start = rows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = rows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.42, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: end)
+        XCTAssertEqual(rows.count, 3)
+        rows.firstMatch.swipeLeft()
+        XCTAssertTrue(app.buttons["Delete"].exists)
+        XCTAssertEqual(rows.count, 3, "A trailing full swipe must never delete automatically")
+        rows.firstMatch.swipeRight()
+        XCTAssertEqual(rows.count, 3)
+    }
     func testAbandonUndoRestoreAndSearch() {
         continueAfterFailure = false
         let app = XCUIApplication(); app.launchArguments = ["--uitesting", "--fixture-assignments"]; app.launch()

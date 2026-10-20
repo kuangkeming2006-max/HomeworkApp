@@ -14,6 +14,7 @@ struct AssignmentListView: View {
     @State private var projection = AssignmentListProjection()
     @State private var pageDirection = 1
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
 
@@ -22,8 +23,8 @@ struct AssignmentListView: View {
     var body: some View {
         VStack(spacing: 0) {
             Group {
-                if sizeClass == .regular {
-                    categoryPicker.pickerStyle(.menu).accessibilityIdentifier("assignments.category")
+                if sizeClass == .regular || typeSize.isAccessibilitySize {
+                    categoryPicker.pickerStyle(.menu)
                 } else { categoryPicker.pickerStyle(.segmented) }
             }
             .padding(.horizontal).padding(.vertical, 8)

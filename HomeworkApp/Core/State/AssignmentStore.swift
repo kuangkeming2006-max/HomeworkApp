@@ -11,14 +11,23 @@ final class AssignmentStore {
     var defaultReminder: ReminderConfiguration = .none
     let undo = UndoCoordinator()
     private var dispositionTokens: [UUID: UUID] = [:]
+    @ObservationIgnored private var positions: [UUID: Int]
 
     init(repository: any AssignmentRepository) throws {
         self.repository = repository
-        assignments = try repository.fetchAll()
+        let loaded = try repository.fetchAll()
+        assignments = loaded
+        positions = Dictionary(uniqueKeysWithValues: loaded.enumerated().map { ($0.element.id, $0.offset) })
     }
 
     func assignment(_ id: UUID) -> Assignment? {
-        assignments.first { $0.id == id && $0.deletedAt == nil }
+        guard let value = record(id), value.deletedAt == nil else { return nil }
+        return value
+    }
+
+    private func record(_ id: UUID) -> Assignment? {
+        guard let index = positions[id] else { return nil }
+        return assignments[index]
     }
 
     func makeDraft(on day: Date? = nil) -> Assignment {
@@ -29,15 +38,19 @@ final class AssignmentStore {
     }
 
     func save(_ values: [Assignment]) throws {
+        guard Set(values.map(\.id)).count == values.count else {
+            throw AssignmentError.invalid("A save batch contains duplicate assignment identifiers.")
+        }
         try repository.save(values)
         for value in values {
-            if let prior = assignments.first(where: { $0.id == value.id }), AssignmentDisposition(prior) != AssignmentDisposition(value) {
+            if let prior = record(value.id), AssignmentDisposition(prior) != AssignmentDisposition(value) {
                 dispositionTokens[value.id] = UUID()
             }
         }
         let changes = Dictionary(uniqueKeysWithValues: values.map { ($0.id, $0) })
         let existing = Set(assignments.map(\.id))
         assignments = assignments.map { changes[$0.id] ?? $0 } + values.filter { !existing.contains($0.id) }
+        positions = Dictionary(uniqueKeysWithValues: assignments.enumerated().map { ($0.element.id, $0.offset) })
         didChange?()
     }
 
@@ -72,7 +85,7 @@ final class AssignmentStore {
         dispositionTokens[id] = priorToken
         perform {
             try update(id, change: change)
-            guard let after = assignments.first(where: { $0.id == id }) else { return }
+            guard let after = record(id) else { return }
             undo.record(id: id, before: AssignmentDisposition(before), after: AssignmentDisposition(after), message: message,
                         previousToken: priorToken, resultingToken: dispositionTokens[id] ?? priorToken)
         }
@@ -80,7 +93,7 @@ final class AssignmentStore {
 
     func undoLatest() {
         guard let action = undo.takeLatest(),
-              var current = assignments.first(where: { $0.id == action.assignmentID }) else { return }
+              var current = record(action.assignmentID) else { return }
         // Content edits in another window survive; newer disposition changes are never overwritten.
         guard dispositionTokens[current.id] == action.resultingToken, AssignmentDisposition(current) == action.after else { return }
         action.before.apply(to: &current)

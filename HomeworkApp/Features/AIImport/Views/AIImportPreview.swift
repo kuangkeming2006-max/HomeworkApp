@@ -32,12 +32,7 @@ private struct CandidateForm: View {
 
     var body: some View {
         Section {
-            HStack {
-                Text("Import this assignment")
-                Spacer()
-                Toggle("Import this assignment", isOn: $candidate.selected).labelsHidden().fixedSize()
-                    .accessibilityIdentifier("ai.select.\(index)")
-            }
+            NativeToggleRow(title: "Import this assignment", isOn: $candidate.selected, identifier: "ai.select.\(index)")
             if candidate.selected {
                 TextField("Title", text: $candidate.assignment.title).accessibilityIdentifier("ai.title.\(index)")
                 TextField("Course", text: Binding(get: { candidate.assignment.course ?? "" }, set: { candidate.assignment.course = $0 }))
@@ -47,8 +42,7 @@ private struct CandidateForm: View {
                     .textInputAutocapitalization(.never)
                 if candidate.requiresDateConfirmation {
                     Text(candidate.dateIssue ?? "Confirm this deadline.").foregroundStyle(.orange)
-                    Toggle("I confirmed this deadline", isOn: $candidate.dateConfirmed)
-                        .accessibilityIdentifier("ai.confirmDate.\(index)")
+                    NativeToggleRow(title: "I confirmed this deadline", isOn: $candidate.dateConfirmed, identifier: "ai.confirmDate.\(index)")
                 }
                 Picker("Priority", selection: $candidate.assignment.priority) {
                     ForEach(Priority.allCases) { Text($0.label).tag($0) }

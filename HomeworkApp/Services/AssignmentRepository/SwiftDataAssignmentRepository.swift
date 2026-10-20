@@ -31,6 +31,9 @@ final class SwiftDataAssignmentRepository: AssignmentRepository {
     }
 
     func save(_ assignments: [Assignment]) throws {
+        guard Set(assignments.map(\.id)).count == assignments.count else {
+            throw AssignmentError.invalid("A save batch contains duplicate assignment identifiers.")
+        }
         for assignment in assignments { try assignment.validate() }
         do {
             for assignment in assignments {

@@ -9,7 +9,7 @@ final class AssignmentFlowTests: HomeworkUITestCase {
         app.launch()
         XCTAssertTrue(app.buttons["assignments.add"].waitForExistence(timeout: 15))
         app.buttons["assignments.add"].tap()
-        let title = app.textFields["editor.title"]
+        let title = app.descendants(matching: .any).matching(identifier: "editor.title").firstMatch
         XCTAssertTrue(title.waitForExistence(timeout: 5))
         title.tap(); title.typeText("Networking lab report")
         app.buttons["editor.save"].tap()
@@ -26,8 +26,8 @@ final class AssignmentFlowTests: HomeworkUITestCase {
         selectCategory("Upcoming", app: app)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         row.tap()
-        XCTAssertEqual(app.textFields["editor.title"].value as? String, "Networking lab report")
-        let course = app.textFields["editor.course"]
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "editor.title").firstMatch.value as? String, "Networking lab report")
+        let course = app.descendants(matching: .any).matching(identifier: "editor.course").firstMatch
         course.tap(); course.typeText("Computer networks")
         app.terminate()
         // Disk durability is covered by hosted tests; UI fixtures intentionally use an in-memory store.

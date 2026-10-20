@@ -31,6 +31,12 @@ final class AttachmentViewModel {
         assignmentID = nil; store = nil
     }
 
+    deinit {
+        let files = staged
+        let storage = service
+        Task { for reference in files { try? await storage.remove(reference) } }
+    }
+
     func markCommitted() { staged.removeAll(); draftChanged = nil }
 
     func close() async {

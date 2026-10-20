@@ -10,6 +10,7 @@ final class AssignmentEditor {
     private let store: AssignmentStore
     private var pending: [(inout Assignment) -> Void] = []
     private var saveTask: Task<Void, Never>?
+    private var pendingStatus: AssignmentStatus?
 
     init(assignment: Assignment, isNew: Bool, store: AssignmentStore) {
         draft = assignment; self.isNew = isNew; self.store = store
@@ -36,10 +37,18 @@ final class AssignmentEditor {
 
     func setStatus(_ status: AssignmentStatus) {
         guard draft.status.canTransition(to: status), draft.status != status else { return }
+        if !isNew { pendingStatus = status }
         let date = Date()
         set(\.status, status)
         set(\.completedAt, status == .completed ? max(date, draft.createdAt) : nil)
         set(\.abandonedAt, status == .abandoned ? max(date, draft.createdAt) : nil)
+    }
+
+    func reconcile(_ value: Assignment) {
+        guard !isNew, value.id == draft.id else { return }
+        var merged = value
+        for change in pending { change(&merged) }
+        draft = merged
     }
 
     @discardableResult
@@ -57,11 +66,15 @@ final class AssignmentEditor {
         guard !isNew, !pending.isEmpty else { return }
         do {
             try draft.validate()
+            if let target = pendingStatus, let latest = store.assignment(draft.id), !latest.status.canTransition(to: target) {
+                throw AssignmentError.invalid("This assignment's status changed in another window. Restore it before choosing a different status.")
+            }
             let changes = pending
             try store.update(draft.id) { value in
                 for change in changes { change(&value) }
             }
             pending.removeAll()
+            pendingStatus = nil
         } catch { validationMessage = error.localizedDescription }
     }
 }

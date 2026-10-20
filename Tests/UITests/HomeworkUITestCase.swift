@@ -16,7 +16,7 @@ class HomeworkUITestCase: XCTestCase {
         let segment = app.segmentedControls.buttons[name]
         if segment.exists { segment.tap() }
         else {
-            app.buttons["assignments.category"].tap()
+            app.buttons["assignments.filter"].tap()
             app.buttons[name].tap()
         }
     }

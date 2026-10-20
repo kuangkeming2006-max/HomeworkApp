@@ -16,9 +16,9 @@ struct AssignmentDetailView: View {
     var body: some View {
         Form {
             Section("Assignment") {
-                TextField("Title", text: binding(\.title))
+                TextField("Title", text: binding(\.title), axis: .vertical)
                     .accessibilityIdentifier("editor.title")
-                TextField("Course", text: optionalBinding(\.course))
+                TextField("Course", text: optionalBinding(\.course), axis: .vertical)
                     .accessibilityIdentifier("editor.course")
                 Picker("Priority", selection: binding(\.priority)) {
                     ForEach(Priority.allCases) { Text($0.label).tag($0) }
@@ -29,10 +29,9 @@ struct AssignmentDetailView: View {
                 DatePicker("Deadline", selection: binding(\.dueDate), displayedComponents: [.date, .hourAndMinute])
                     .environment(\.timeZone, TimeZone(identifier: editor.draft.dueTimeZone) ?? .current)
                     .accessibilityIdentifier("editor.deadline")
-                Picker("Time zone", selection: binding(\.dueTimeZone)) {
-                    ForEach(TimeZone.knownTimeZoneIdentifiers, id: \.self) { Text($0).tag($0) }
-                }
-                .pickerStyle(.menu)
+                NavigationLink {
+                    TimeZoneSelector(selection: binding(\.dueTimeZone))
+                } label: { LabeledContent("Time zone", value: editor.draft.dueTimeZone) }
                 .accessibilityIdentifier("editor.timezone")
             }
             Section("Notes") {
@@ -57,8 +56,7 @@ struct AssignmentDetailView: View {
             }
             if !editor.isNew {
                 Section {
-                    Toggle("Completed", isOn: Binding(get: { editor.draft.isCompleted }, set: { editor.setCompleted($0) }))
-                        .accessibilityIdentifier("editor.completed")
+                    NativeToggleRow(title: "Completed", isOn: Binding(get: { editor.draft.isCompleted }, set: { editor.setCompleted($0) }), identifier: "editor.completed")
                     Picker("Status", selection: Binding(get: { editor.draft.status }, set: { editor.setStatus($0) })) {
                         ForEach(AssignmentStatus.allCases) { Text($0.label).tag($0).disabled(!editor.draft.status.canTransition(to: $0)) }
                     }.accessibilityIdentifier("editor.status")
@@ -74,7 +72,9 @@ struct AssignmentDetailView: View {
         .accessibilityIdentifier("editor.form")
         .toolbar {
             if editor.isNew {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { Task { await attachmentModel?.close(); dismiss() } }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
                         if editor.create() { attachmentModel?.markCommitted(); dismiss() }
@@ -87,8 +87,9 @@ struct AssignmentDetailView: View {
         .task {
             guard attachmentModel == nil, let attachmentService else { return }
             if editor.isNew {
-                attachmentModel = AttachmentViewModel(service: attachmentService) { references in
-                    editor.set(\.attachments, references)
+                let draftEditor = editor
+                attachmentModel = AttachmentViewModel(service: attachmentService) { [draftEditor] references in
+                    draftEditor.set(\.attachments, references)
                 }
             } else {
                 attachmentModel = AttachmentViewModel(assignmentID: editor.draft.id, store: store, service: attachmentService)
@@ -96,7 +97,9 @@ struct AssignmentDetailView: View {
         }
         .onDisappear {
             editor.flush()
-            if editor.isNew, let attachmentModel { Task { await attachmentModel.close() } }
+        }
+        .onChange(of: store.assignment(editor.draft.id)) { _, value in
+            if let value { editor.reconcile(value) }
         }
     }
 
