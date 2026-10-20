@@ -8,6 +8,7 @@ final class AssignmentStore {
     var errorMessage: String?
     private let repository: any AssignmentRepository
     var didChange: (@MainActor () -> Void)?
+    var defaultReminder: ReminderConfiguration = .none
 
     init(repository: any AssignmentRepository) throws {
         self.repository = repository
@@ -22,7 +23,7 @@ final class AssignmentStore {
         let calendar = Calendar.current
         let target = day ?? calendar.date(byAdding: .day, value: 1, to: Date()) ?? Date()
         let due = calendar.date(bySettingHour: 23, minute: 59, second: 0, of: target) ?? target
-        return Assignment(dueDate: due)
+        return Assignment(dueDate: due, reminder: defaultReminder)
     }
 
     func save(_ values: [Assignment]) throws {

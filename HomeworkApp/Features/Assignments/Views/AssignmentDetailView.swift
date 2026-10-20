@@ -4,8 +4,11 @@ import HomeworkDomain
 struct AssignmentDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var editor: AssignmentEditor
+    @Environment(\.attachmentService) private var attachmentService
+    private let store: AssignmentStore
 
     init(assignment: Assignment, isNew: Bool = false, store: AssignmentStore) {
+        self.store = store
         _editor = State(initialValue: AssignmentEditor(assignment: assignment, isNew: isNew, store: store))
     }
 
@@ -33,6 +36,18 @@ struct AssignmentDetailView: View {
             Section("Notes") {
                 TextEditor(text: optionalBinding(\.notes)).frame(minHeight: 120)
                     .accessibilityLabel("Notes").accessibilityIdentifier("editor.notes")
+            }
+            Section("Reminder") {
+                ReminderPicker(value: binding(\.reminder))
+                Text("Enable notifications in Settings. A reminder time that has already passed will be skipped.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            if editor.isNew {
+                Section("Attachments") { Text("Create the assignment to add photos and files.").foregroundStyle(.secondary) }
+            } else if let attachmentService {
+                AttachmentList(assignmentID: editor.draft.id, store: store, service: attachmentService)
+            } else {
+                Section("Attachments") { Text("Attachment storage is currently unavailable.").foregroundStyle(.secondary) }
             }
             if !editor.isNew {
                 Section {

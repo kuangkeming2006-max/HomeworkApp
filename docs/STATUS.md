@@ -16,6 +16,10 @@ Verification in progress: nine Windows/Linux build-tool tests and the portable S
 
 Each phase requires its own Git commit and relevant passing checks. The placeholder screens in Phase 1 do not satisfy the full app acceptance criteria.
 
-## Phase 2 — implementation submitted for CI
+## Phase 2 — verified
 
-Implemented: complete domain assignment values and service boundaries; versioned SwiftData schema and migration plan; transactional validated batch saves; create/edit with debounced auto-save; completion, restoration and tombstone deletion; Upcoming/Completed/All filters; priority/deadline sorting; interactive month grid with task markers, day selection and date-based creation; adaptive list/detail panes at available widths. Repository, editor, DST, filtering, sorting and month-grid tests have been added. Apple compilation and feature test results are pending; reminders, attachment storage, AI and backup are subsequent phases.
+Implemented: complete domain assignment values and service boundaries; versioned SwiftData schema and migration plan; transactional validated batch saves; create/edit with debounced auto-save; completion, restoration and tombstone deletion; Upcoming/Completed/All filters; priority/deadline sorting; interactive month grid with task markers, day selection and date-based creation; adaptive list/detail panes at available widths. Repository, editor, DST, filtering, sorting and month-grid tests pass. Real CI run `39384598013` is fully successful for commit `bbcc08b`, including Linux, unsigned arm64 device build and all six iPhone/iPad configurations.
+
+## Phase 3 — implementation submitted for CI
+
+Independent per-task reminders, preset/custom lead amounts, new-task defaults, explicit notification permission controls, serialized bounded scheduling (60 slots, preserving unrelated requests), completion/deletion cancellation and foreground/time-change reconciliation are implemented. Past reminder times are skipped and deferred reminders are exposed in Settings. Attachments use persistent copied files, security-scoped imports, size limits, SHA-256 duplicate detection per task, PhotosPicker, Files import, Quick Look preview, explicit removal and delayed orphan cleanup. Notification and file lifecycle integration tests have been added. Physical notification delivery remains a device check.

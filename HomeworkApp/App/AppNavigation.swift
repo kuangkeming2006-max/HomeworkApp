@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum AppSection: String, CaseIterable, Identifiable {
     case assignments = "Assignments"
@@ -18,6 +19,7 @@ enum AppSection: String, CaseIterable, Identifiable {
 
 struct AppNavigation: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selection: AppSection? = .assignments
     let container: AppContainer
 
@@ -38,6 +40,13 @@ struct AppNavigation: View {
             }
         }
         .environment(\.locale, Locale(identifier: "en_US"))
+        .environment(\.attachmentService, container.attachmentService)
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { container.refreshServices() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
+            container.refreshServices()
+        }
     }
 
     @ViewBuilder
@@ -72,7 +81,7 @@ struct AppNavigation: View {
         switch section {
         case .assignments: AssignmentWorkspace(store: store)
         case .calendar: NavigationStack { CalendarView(store: store) }
-        case .settings: NavigationStack { SettingsView(version: container.version) }
+        case .settings: NavigationStack { SettingsView(container: container) }
         }
     }
 }

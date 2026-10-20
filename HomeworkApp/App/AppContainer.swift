@@ -9,6 +9,9 @@ final class AppContainer {
     private(set) var store: AssignmentStore?
     private(set) var startupError: String?
     let syncService: any SyncService = OfflineSyncService()
+    let preferences = AppPreferences()
+    let notifications = NotificationCoordinator(client: LocalNotificationClient())
+    private(set) var attachmentService: (any AttachmentService)?
 
     init() { openStore() }
 
@@ -18,9 +21,26 @@ final class AppContainer {
             let database = try SwiftDataAssignmentRepository.makeContainer(inMemory: testing)
             let repository = SwiftDataAssignmentRepository(container: database)
             store = try AssignmentStore(repository: repository)
+            store?.defaultReminder = preferences.defaultReminder
+            attachmentService = try? LocalAttachmentService()
+            store?.didChange = { [weak self] in self?.refreshServices() }
+            preferences.didChange = { [weak self] in
+                guard let self else { return }
+                self.store?.defaultReminder = self.preferences.defaultReminder
+            }
+            refreshServices()
             startupError = nil
         } catch {
             startupError = "Your data could not be opened. It has not been erased. \(error.localizedDescription)"
+        }
+    }
+
+    func refreshServices() {
+        guard let store else { return }
+        notifications.refresh(store.assignments)
+        if let attachmentService {
+            let keeping = Set(store.assignments.filter { $0.deletedAt == nil }.flatMap(\.attachments).map(\.relativePath))
+            Task { try? await attachmentService.pruneOrphans(keeping: keeping, now: Date()) }
         }
     }
 }
