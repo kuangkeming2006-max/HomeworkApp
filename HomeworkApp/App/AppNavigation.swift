@@ -41,6 +41,7 @@ struct AppNavigation: View {
         }
         .environment(\.locale, Locale(identifier: "en_US"))
         .environment(\.attachmentService, container.attachmentService)
+        .environment(\.llmProviderFactory, { [container] in try container.makeLLMProvider() })
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { container.refreshServices() }
         }

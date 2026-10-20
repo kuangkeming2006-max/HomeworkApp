@@ -12,6 +12,10 @@ final class AppContainer {
     let preferences = AppPreferences()
     let notifications = NotificationCoordinator(client: LocalNotificationClient())
     private(set) var attachmentService: (any AttachmentService)?
+    let secrets: any SecretStore = KeychainSecretStore()
+    let providerBuilder: LLMProviderBuilder = { configuration, key in
+        ChatCompletionsProvider(configuration: configuration, apiKey: key, transport: URLSessionTransport())
+    }
 
     init() { openStore() }
 
@@ -42,5 +46,15 @@ final class AppContainer {
             let keeping = Set(store.assignments.filter { $0.deletedAt == nil }.flatMap(\.attachments).map(\.relativePath))
             Task { try? await attachmentService.pruneOrphans(keeping: keeping, now: Date()) }
         }
+    }
+
+    func makeLLMProvider() throws -> any LLMProvider {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        if arguments.contains("--uitesting") && arguments.contains("--mock-ai") { return FixtureLLMProvider() }
+        #endif
+        _ = try preferences.provider.endpoint()
+        guard let key = try secrets.readKey(), !key.isEmpty else { throw LLMError.missingKey }
+        return providerBuilder(preferences.provider, key)
     }
 }

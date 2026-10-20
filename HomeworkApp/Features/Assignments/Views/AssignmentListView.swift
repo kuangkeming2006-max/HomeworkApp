@@ -7,6 +7,8 @@ struct AssignmentListView: View {
     @State private var filter: AssignmentFilter = .upcoming
     @State private var sort: AssignmentSort = .priority
     @State private var adding = false
+    @State private var addingAI = false
+    @Environment(\.llmProviderFactory) private var providerFactory
 
     private var visible: [Assignment] { AssignmentQuery.apply(store.assignments, filter: filter, sort: sort) }
 
@@ -72,14 +74,23 @@ struct AssignmentListView: View {
                 } label: { Label("Sort", systemImage: "arrow.up.arrow.down") }
                 .accessibilityIdentifier("assignments.sort")
             }
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button("Add assignment", systemImage: "plus") { adding = true }
                     .accessibilityIdentifier("assignments.add")
                     .keyboardShortcut("n", modifiers: .command)
             }
+            ToolbarItem(placement: .primaryAction) {
+                Button("Add with AI", systemImage: "sparkles") { addingAI = true }
+                    .accessibilityIdentifier("assignments.ai")
+            }
         }
         .sheet(isPresented: $adding) {
             NavigationStack { AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store) }
+        }
+        .sheet(isPresented: $addingAI) {
+            if let providerFactory {
+                NavigationStack { AIImportView(store: store, providerFactory: providerFactory) }
+            }
         }
     }
 }

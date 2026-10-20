@@ -29,6 +29,7 @@ final class NavigationTests: XCTestCase {
 
         navigate("Settings", in: app)
         let storage = app.staticTexts["settings.storage"]
+        for _ in 0..<4 where !storage.exists { app.swipeUp() }
         XCTAssertTrue(storage.waitForExistence(timeout: 5))
         XCTAssertEqual(storage.label, "Storage, On this device")
         capture("Settings")

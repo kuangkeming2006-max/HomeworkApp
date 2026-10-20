@@ -9,6 +9,10 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var preferences = container.preferences
         Form {
+            Section("AI") {
+                NavigationLink("AI provider") { AISettingsView(container: container) }
+                    .accessibilityIdentifier("settings.ai")
+            }
             Section("Notifications") {
                 LabeledContent("Permission", value: permissionText)
                 if container.notifications.permission == .notDetermined {

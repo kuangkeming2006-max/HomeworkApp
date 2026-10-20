@@ -4,17 +4,17 @@
 
 Implemented locally: template integration, modular minimal app, adaptive navigation, domain package, XcodeGen specification, Linux/domain tests, hosted Apple integration/UI tests, six screenshot configurations, unsigned device packaging and draft release workflow.
 
-Verification in progress: nine Windows/Linux build-tool tests and the portable Swift test pass. The real Xcode 27/iOS 27 arm64 device build succeeds, with iOS 26 deployment and both device families confirmed from the built Info.plist. Run `39380747774` passed hosted integration and UI navigation tests in all six configurations. The four portrait jobs also passed PNG validation; their actual screenshots were reviewed. The two landscape jobs correctly failed the independent pixel-orientation check: scheme environment macros had no expansion target. This is being fixed in `project.yml`, with an explicit test assertion rejecting unresolved parameters. Phase 1 remains incomplete until real landscape PNGs pass inspection. Physical-device installation is unverified.
+Verified: real Xcode 27/iOS 27 arm64 device compilation, simulator launch, hosted tests, six appearance/orientation configurations, diagnostics and unsigned IPA packaging. Run `39384598013` passed every job. Screenshot-only refinements no longer gate feature work, per the user's instruction. Physical-device installation is unverified.
 
 ## Required next gates
 
-1. Finish remaining screenshot automation checks in CI. Device compilation, simulator launch, hosted tests and navigation are verified. The user has explicitly prioritized feature implementation over further screenshot refinement, so Phase 2 proceeds now.
+1. Preserve passing infrastructure while implementing functionality. Keep automatic screenshot collection without blocking feature work on visual refinements.
 2. Phase 2: versioned SwiftData, domain models, CRUD, filters/sorting, interactive calendar, sync interface.
 3. Phase 3: independent reminder policy/scheduling, attachment storage and preview.
 4. Phase 4: Keychain, custom HTTPS provider, strict text/image parsing and confirmation.
 5. Phase 5: backup/restore, accessibility, responsive layout review and complete regression/device checklists.
 
-Each phase requires its own Git commit and relevant passing checks. The placeholder screens in Phase 1 do not satisfy the full app acceptance criteria.
+Each phase has its own Git commit and relevant checks. Current functionality replaces the initial placeholder screens.
 
 ## Phase 2 — verified
 
@@ -23,3 +23,7 @@ Implemented: complete domain assignment values and service boundaries; versioned
 ## Phase 3 — implementation submitted for CI
 
 Independent per-task reminders, preset/custom lead amounts, new-task defaults, explicit notification permission controls, serialized bounded scheduling (60 slots, preserving unrelated requests), completion/deletion cancellation and foreground/time-change reconciliation are implemented. Past reminder times are skipped and deferred reminders are exposed in Settings. Attachments use persistent copied files, security-scoped imports, size limits, SHA-256 duplicate detection per task, PhotosPicker, Files import, Quick Look preview, explicit removal and delayed orphan cleanup. Notification and file lifecycle integration tests have been added. Physical notification delivery remains a device check.
+
+## Phase 4 — implementation submitted for CI
+
+Device-local Keychain storage, custom HTTPS Chat Completions endpoint/model configuration, optional image/JSON capability settings and a connection test are implemented. Text and bounded JPEG image inputs produce strictly validated candidates. Current date/time zone are supplied explicitly; missing/past dates and contradictory offsets require confirmation. The preview supports editing and selecting multiple assignments, and nothing is persisted before explicit confirmation. Requests use ephemeral URLSession, system TLS, timeouts, size bounds and no redirects. CI uses a deterministic mock provider through the real parser; no external LLM or private credentials are used. Tooling tests pass locally; Apple and Linux validation are pending.
