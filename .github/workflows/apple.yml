@@ -1,0 +1,80 @@
+name: Apple build and screenshots
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: apple-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  tooling:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: python3 -m unittest discover -s scripts/tests -v
+  domain:
+    runs-on: ubuntu-24.04
+    container: swift:6.2.3-noble
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Test portable domain on Linux
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts
+          swift --version | tee artifacts/swift-version.log
+          swift test --package-path Packages/HomeworkDomain 2>&1 | tee artifacts/domain-tests.log
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: domain-linux-${{ github.run_attempt }}
+          path: artifacts/
+          retention-days: 14
+  simulator:
+    runs-on: xcode-27
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - {family: phone, appearance: light, orientation: portrait}
+          - {family: phone, appearance: dark, orientation: portrait}
+          - {family: pad, appearance: light, orientation: portrait}
+          - {family: pad, appearance: dark, orientation: portrait}
+          - {family: pad, appearance: light, orientation: landscape}
+          - {family: pad, appearance: dark, orientation: landscape}
+    env:
+      XCODE_VERSION: latest-27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Discover and select stable Xcode
+        run: python3 scripts/select_xcode.py
+      - name: Install verified project generator
+        run: python3 scripts/install_xcodegen.py
+      - name: Generate Xcode project
+        run: .tools/xcodegen generate
+      - name: Resolve local packages
+        run: xcodebuild -resolvePackageDependencies -project HomeworkApp.xcodeproj -scheme HomeworkApp > artifacts/resolve.log 2>&1
+      - name: Test on discovered simulator and export screenshots
+        run: python3 scripts/run_apple.py simulator --family ${{ matrix.family }} --appearance ${{ matrix.appearance }} --orientation ${{ matrix.orientation }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: simulator-${{ matrix.family }}-${{ matrix.appearance }}-${{ matrix.orientation }}-${{ github.run_attempt }}
+          path: |
+            artifacts/
+            HomeworkApp.xcodeproj/
+          retention-days: 14
+  unsigned-device:
+    uses: ./.github/workflows/ios-build.yml

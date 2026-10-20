@@ -1,0 +1,11 @@
+# Unsigned build and free-account installation
+
+1. In GitHub Actions, open the successful matching commit and download `unsigned-device-*`. Extract the outer artifact ZIP.
+2. Inside `unsigned-device/`, use `HomeworkApp-unsigned.ipa`. It contains an arm64 iPhoneOS build under `Payload/HomeworkApp.app`; it has no developer signature or embedded provisioning profile. The `.app.zip` is a separate fallback for signing tools that accept app bundles.
+3. Set up SideStore on your iPhone/iPad using the current [official installation guide](https://docs.sidestore.io/docs/installation/). This initial setup needs the prescribed computer/device pairing steps. Enter your Apple account only in the signing tool, never in GitHub or this app.
+4. Transfer the IPA through Files and import it using SideStore's app-install action. SideStore must sign/provision it with your free Apple account before iOS can run it. Enable Developer Mode/trust the developer profile if the official guide/device requests it.
+5. Refresh the free provisioning before it expires according to SideStore/Apple's current limits. Keep the same Apple team and effective bundle identifier when updating. Do not delete the installed app to update it; deletion removes its local container.
+
+No paid Apple Developer Program, backend or CI signing secrets are required for these builds. A successful unsigned build does not prove that a particular SideStore/iOS combination accepts it. Account limits, pairing, provisioning expiry and signature refresh require a physical device and the current tool's instructions. Never upload your account password, pairing file, certificate or private API key to this repository.
+
+Normal app updates must preserve local data. Verify re-signing with the same identity using `DEVICE_TESTS.md`; changing identity/bundle IDs or uninstalling can create a different container. Back up before changing signing tools. Backup functionality is planned for Phase 5 and is not present in the Phase 1 starter.
