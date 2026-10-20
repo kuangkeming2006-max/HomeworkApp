@@ -6,7 +6,7 @@ struct BriefingView: View {
     let history: BriefingHistoryStore
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 60)) { context in
+        TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
             let report = BriefingService.report(store.assignments, now: context.date)
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {

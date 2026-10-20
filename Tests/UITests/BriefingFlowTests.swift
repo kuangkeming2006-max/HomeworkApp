@@ -49,6 +49,6 @@ final class BriefingFlowTests: HomeworkUITestCase {
         XCTAssertTrue(app.staticTexts[title].firstMatch.waitForExistence(timeout: 5)); app.staticTexts[title].firstMatch.tap()
     }
     private func capture(_ app: XCUIApplication, _ name: String) {
-        let attachment = XCTAttachment(screenshot: app.screenshot()); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
     }
 }

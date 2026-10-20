@@ -31,7 +31,7 @@ struct AssignmentListView: View {
             .accessibilityIdentifier("assignments.filter")
             .contentShape(Rectangle())
             .gesture(categorySwipe)
-            TimelineView(.periodic(from: .now, by: 60)) { context in
+            TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
               List {
                 ForEach(visible) { assignment in
                     HStack(alignment: .center, spacing: 12) {
@@ -69,7 +69,7 @@ struct AssignmentListView: View {
                     }
                     .contextMenu {
                         Button("Edit", systemImage: "pencil") { onOpen(assignment.id) }
-                        Button(assignment.isCompleted ? "Restore" : "Complete", systemImage: "checkmark") {
+                        Button(assignment.status == .active ? "Complete" : "Restore", systemImage: "checkmark") {
                             store.toggleCompletion(assignment.id)
                         }
                         Button("Delete", systemImage: "trash", role: .destructive) { store.delete(assignment.id) }

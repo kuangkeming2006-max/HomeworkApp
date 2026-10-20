@@ -53,7 +53,9 @@ final class AttachmentViewModel {
                 let reference = try await service.importFile(from: url)
                 try await commit(reference)
             }
-        } catch { errorMessage = error.localizedDescription }
+        } catch {
+            if (error as? CocoaError)?.code != .userCancelled { errorMessage = error.localizedDescription }
+        }
     }
 
     func importPhotos(_ items: [PhotosPickerItem]) async {

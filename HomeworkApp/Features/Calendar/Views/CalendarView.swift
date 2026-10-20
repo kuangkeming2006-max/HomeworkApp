@@ -13,7 +13,7 @@ struct CalendarView: View {
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 60)) { context in
+        TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
           ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack {

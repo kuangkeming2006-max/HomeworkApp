@@ -5,6 +5,7 @@ struct AssignmentDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var editor: AssignmentEditor
     @State private var attachmentModel: AttachmentViewModel?
+    @State private var closing = false
     @Environment(\.attachmentService) private var attachmentService
     private let store: AssignmentStore
 
@@ -46,7 +47,7 @@ struct AssignmentDetailView: View {
             }
             Section("Reminder") {
                 ReminderPicker(value: binding(\.reminder))
-                Text("Enable notifications in Settings. A reminder time that has already passed will be skipped.")
+                Text("Notifications follow your system settings. Reminder times that have already passed are skipped.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if let attachmentModel {
@@ -57,6 +58,7 @@ struct AssignmentDetailView: View {
             if !editor.isNew {
                 Section {
                     NativeToggleRow(title: "Completed", isOn: Binding(get: { editor.draft.isCompleted }, set: { editor.setCompleted($0) }), identifier: "editor.completed")
+                        .disabled(editor.draft.status == .abandoned)
                     Picker("Status", selection: Binding(get: { editor.draft.status }, set: { editor.setStatus($0) })) {
                         ForEach(AssignmentStatus.allCases) { Text($0.label).tag($0).disabled(!editor.draft.status.canTransition(to: $0)) }
                     }.accessibilityIdentifier("editor.status")
@@ -73,17 +75,20 @@ struct AssignmentDetailView: View {
         .toolbar {
             if editor.isNew {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { Task { await attachmentModel?.close(); dismiss() } }
+                    Button("Cancel") {
+                        guard !closing else { return }; closing = true
+                        Task { await attachmentModel?.close(); dismiss() }
+                    }.disabled(closing)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
                         if editor.create() { attachmentModel?.markCommitted(); dismiss() }
                     }
-                        .disabled(!editor.canSave || attachmentModel?.busy == true).accessibilityIdentifier("editor.save")
+                        .disabled(closing || !editor.canSave || attachmentModel?.busy == true).accessibilityIdentifier("editor.save")
                 }
             }
         }
-        .interactiveDismissDisabled(attachmentModel?.busy == true)
+        .interactiveDismissDisabled(closing || attachmentModel?.busy == true)
         .task {
             guard attachmentModel == nil, let attachmentService else { return }
             if editor.isNew {

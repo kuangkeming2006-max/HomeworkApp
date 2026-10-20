@@ -5,7 +5,7 @@ import HomeworkDomain
 /// Composition root for replaceable platform services and shared window state.
 @Observable @MainActor
 final class AppContainer {
-    let version = "0.1.0"
+    let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Development"
     private(set) var store: AssignmentStore?
     private(set) var startupError: String?
     let syncService: any SyncService = OfflineSyncService()
@@ -45,6 +45,9 @@ final class AppContainer {
             #if DEBUG
             if testing && ProcessInfo.processInfo.arguments.contains("--fixture-assignments") {
                 try store?.save(UITestFixtures.assignments())
+            }
+            if testing && ProcessInfo.processInfo.arguments.contains("--fixture-performance") {
+                try store?.save(UITestFixtures.performanceAssignments())
             }
             #endif
             store?.defaultReminder = preferences.defaultReminder

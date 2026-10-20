@@ -4,6 +4,13 @@ import UIKit
 import HomeworkDomain
 
 enum UITestFixtures {
+    static func performanceAssignments(now: Date = Date()) -> [Assignment] {
+        (0..<600).map { index in
+            Assignment(title: "Synthetic coursework \(index)", course: "Course \(index % 12)", notes: "Synthetic instructions",
+                       dueDate: now.addingTimeInterval(Double(index + 1) * 3600),
+                       priority: Priority(rawValue: index % 4 + 1) ?? .medium, now: now)
+        }
+    }
     static func assignments(now: Date = Date()) -> [Assignment] {
         [Assignment(title: "Low earlier", dueDate: now.addingTimeInterval(86_400), priority: .low),
          Assignment(title: "Urgent later", dueDate: now.addingTimeInterval(345_600), priority: .urgent),

@@ -24,6 +24,7 @@ struct AppNavigation: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var systemTypeSize
     @State private var selection: AppSection? = .assignments
     @State private var requestedAssignment: AssignmentNavigationRequest?
     @State private var education = false
@@ -46,6 +47,7 @@ struct AppNavigation: View {
             }
         }
         .environment(\.locale, Locale(identifier: "en_US"))
+        .environment(\.dynamicTypeSize, effectiveTypeSize)
         .environment(\.attachmentService, container.attachmentService)
         .environment(\.llmProviderFactory, { [container] in try container.makeLLMProvider() })
         .onChange(of: scenePhase) { _, phase in
@@ -70,6 +72,14 @@ struct AppNavigation: View {
                 container.preferences.notificationEducationSeen = true; education = false
             })
         }
+    }
+
+    private var effectiveTypeSize: DynamicTypeSize {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("--uitesting"), args.contains("--large-type") { return .accessibility3 }
+        #endif
+        return systemTypeSize
     }
 
     @ViewBuilder

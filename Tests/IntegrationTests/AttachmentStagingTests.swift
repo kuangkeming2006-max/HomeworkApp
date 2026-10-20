@@ -16,9 +16,9 @@ final class AttachmentStagingTests: XCTestCase {
         await model?.importFiles(.success([source]))
         let reference = try XCTUnwrap(model?.references.first)
         let url = try await service.url(for: reference)
-        weak var released = model
+        let isReleased = { [weak model] in model == nil }
         model = nil
-        XCTAssertNil(released)
+        XCTAssertTrue(isReleased())
         for _ in 0..<100 where FileManager.default.fileExists(atPath: url.path) { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
     }
