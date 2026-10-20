@@ -34,14 +34,15 @@ final class BriefingNotificationTests: XCTestCase {
         coordinator.refresh([task]); await coordinator.waitUntilIdle()
         XCTAssertTrue(client.pending.contains(id))
     }
-    func testNotificationActionsPersistCompletionAndRouteToTheCorrectAssignment() throws {
+    func testNotificationActionsPersistCompletionAndRouteToTheCorrectAssignment() async throws {
         let container = AppContainer(testing: true)
         let store = try XCTUnwrap(container.store)
         let task = Assignment(title: "Synthetic action", dueDate: Date().addingTimeInterval(7200), reminder: .init(amount: 1, unit: .hours))
         try store.save([task])
-        container.handleNotification(.complete(task.id))
+        await container.handleNotificationAndWait(.complete(task.id))
         XCTAssertEqual(store.assignment(task.id)?.status, .completed)
         XCTAssertNotNil(store.assignment(task.id)?.completedAt)
+        XCTAssertEqual(container.notifications.scheduledCount, 0)
         container.handleNotification(.open(.assignment(task.id)))
         XCTAssertEqual(container.pendingRoute, .assignment(task.id))
         container.handleNotification(.open(.briefing))

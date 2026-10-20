@@ -15,12 +15,15 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
         XCTAssertTrue(files.isHittable)
         capture(app, "Editor attachments")
         files.tap()
-        let browse = app.buttons["Browse"].firstMatch
-        XCTAssertTrue(browse.waitForExistence(timeout: 5) || app.navigationBars["Browse"].exists || app.navigationBars["Recents"].exists,
-                      "Files must open the native document browser")
+        // The document service loads in a separate process. Its iPad navigation bar has
+        // a controller identifier rather than the visible Recents/Browse title.
+        let browser = app.collectionViews["File View"]
+        XCTAssertTrue(browser.waitForExistence(timeout: 30), "Files must open the native document browser")
         capture(app, "Native document browser")
-        XCTAssertTrue(app.buttons["Cancel"].firstMatch.exists)
-        app.buttons["Cancel"].firstMatch.tap()
+        let dismiss = app.buttons.matching(NSPredicate(format: "label == 'Cancel' OR label == 'Close'")).firstMatch
+        XCTAssertTrue(dismiss.waitForExistence(timeout: 15))
+        dismiss.tap()
+        XCTAssertTrue(browser.waitForNonExistence(timeout: 5))
         let previews = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.preview.'"))
         XCTAssertTrue(previews.firstMatch.waitForExistence(timeout: 5))
         previews.element(boundBy: 1).tap()

@@ -22,7 +22,8 @@ enum UITestFixtures {
         var task = Assignment(title: "Networking laboratory report with a deliberately long title that should stay within two lines in the list",
                               course: "Computer networks and distributed systems — extended course title", notes: "Synthetic coursework instructions.\nInclude the packet capture analysis and final discussion.",
                               dueDate: now.addingTimeInterval(3600), priority: .urgent, reminder: .init(amount: 30, unit: .minutes))
-        let image = UIGraphicsImageRenderer(size: CGSize(width: 1200, height: 800)).image { context in
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1; format.preferredRange = .standard
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 1200, height: 800), format: format).image { context in
             UIColor.systemIndigo.setFill(); context.fill(CGRect(x: 0, y: 0, width: 1200, height: 800))
             ("Synthetic lab notes" as NSString).draw(at: CGPoint(x: 90, y: 320), withAttributes: [.font: UIFont.systemFont(ofSize: 72), .foregroundColor: UIColor.white])
         }

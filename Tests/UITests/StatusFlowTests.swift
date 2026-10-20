@@ -44,6 +44,8 @@ final class StatusFlowTests: HomeworkUITestCase {
         selectCategory("Upcoming", app: app)
         app.swipeDown()
         let search = app.searchFields.firstMatch
+        // In a narrow iPad column the native search field collapses into a toolbar button.
+        if !search.exists, app.buttons["Search"].exists { app.buttons["Search"].tap() }
         XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Low earlier")
         waitForRows(rows, count: 1); XCTAssertTrue(rows.firstMatch.label.contains("Low earlier"))
         capture(app, "Search")

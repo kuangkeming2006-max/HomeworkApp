@@ -19,6 +19,11 @@ final class BriefingTests: XCTestCase {
         XCTAssertEqual(report.dueWithin24Hours, 1); XCTAssertEqual(report.overdue, 1)
         XCTAssertEqual(report.dueToday, 3); XCTAssertEqual(report.completedDueToday, 1)
         XCTAssertEqual(report.progress, 1.0 / 3.0); XCTAssertEqual(report.mostUrgent?.id, active.id)
+        XCTAssertEqual(report.timeZoneIdentifier, calendar.timeZone.identifier)
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(report)) as? [String: Any])
+        legacy.removeValue(forKey: "timeZoneIdentifier")
+        let restored = try JSONDecoder().decode(BriefingReport.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(restored.timeZoneIdentifier); XCTAssertEqual(restored.remaining, report.remaining)
     }
 
     func testFiniteBriefingScheduleRespectsFrequencyDSTAndDisabledPreference() throws {

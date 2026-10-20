@@ -43,10 +43,10 @@ struct BriefingView: View {
                             AssignmentDetailView(assignment: task, store: store)
                         } label: {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text(urgent.title).font(.title3.weight(.semibold)).foregroundStyle(.primary)
-                                if let course = urgent.course { Text(course).font(.subheadline).foregroundStyle(.secondary) }
+                                Text(urgent.title).font(.title3.weight(.semibold)).foregroundStyle(.primary).lineLimit(2)
+                                if let course = urgent.course { Text(course).font(.subheadline).foregroundStyle(.secondary).lineLimit(1) }
                                 Text(timerInterval: context.date...max(context.date, urgent.deadline), countsDown: true)
-                                    .font(.title.monospacedDigit().weight(.medium)).foregroundStyle(.primary)
+                                    .font(.title.monospacedDigit().weight(.medium)).foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.5)
                                 Text(urgent.deadline, format: .dateTime.month().day().hour().minute()).font(.caption).foregroundStyle(.secondary)
                             }.frame(maxWidth: .infinity, alignment: .leading)
                         }.buttonStyle(.plain).accessibilityIdentifier("briefing.next")
@@ -68,7 +68,7 @@ struct BriefingView: View {
 
     private func statistic(_ label: String, value: Int, symbol: String, color: Color) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text("\(value)").font(.largeTitle.weight(.semibold).monospacedDigit()).foregroundStyle(color)
+            Text("\(value)").font(.largeTitle.weight(.semibold).monospacedDigit()).foregroundStyle(color).lineLimit(1).minimumScaleFactor(0.6)
             Label(label, systemImage: symbol).font(.subheadline).foregroundStyle(.secondary)
         }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
     }
@@ -84,8 +84,12 @@ private struct BriefingHistoryView: View {
                         Text(report.day, format: .dateTime.month(.wide).day().year()).font(.headline)
                         Text("\(report.remaining) remaining · \(report.completedToday) completed · \(report.overdue) overdue")
                             .font(.subheadline).foregroundStyle(.secondary)
-                        Text("Observed \(report.recordedAt.formatted(.dateTime.locale(Locale(identifier: "en_US")).hour().minute()))").font(.caption).foregroundStyle(.secondary)
+                        Text("Observed \(report.recordedAt, format: .dateTime.hour().minute())").font(.caption).foregroundStyle(.secondary)
+                        if let zone = report.timeZoneIdentifier, zone != TimeZone.current.identifier {
+                            Text(zone).font(.caption).foregroundStyle(.secondary)
+                        }
                     }
+                    .environment(\.timeZone, TimeZone(identifier: report.timeZoneIdentifier ?? "") ?? .current)
                 }
             } footer: { Text("Each report is the last snapshot recorded when the app was open that day. Days without observations are omitted.") }
         }.navigationTitle("Previous reports")

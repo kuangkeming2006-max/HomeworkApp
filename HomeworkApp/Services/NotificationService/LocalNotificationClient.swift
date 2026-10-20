@@ -6,7 +6,7 @@ enum HomeworkNotificationResponse: Sendable { case open(HomeworkRoute), complete
 
 @MainActor
 private final class NotificationPresentationDelegate: NSObject, UNUserNotificationCenterDelegate {
-    var onResponse: ((HomeworkNotificationResponse) -> Void)?
+    var onResponse: ((HomeworkNotificationResponse) async -> Void)?
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .list, .sound, .badge]
@@ -20,11 +20,11 @@ private final class NotificationPresentationDelegate: NSObject, UNUserNotificati
         await respond(action: action, identifier: identifier, briefing: briefing)
     }
 
-    private func respond(action: String, identifier: String?, briefing: Bool) {
+    private func respond(action: String, identifier: String?, briefing: Bool) async {
         guard [UNNotificationDefaultActionIdentifier, "assignment.complete", "assignment.view"].contains(action) else { return }
         if let identifier, let id = UUID(uuidString: identifier) {
-            onResponse?(action == "assignment.complete" ? .complete(id) : .open(.assignment(id)))
-        } else if briefing { onResponse?(.open(.briefing)) }
+            await onResponse?(action == "assignment.complete" ? .complete(id) : .open(.assignment(id)))
+        } else if briefing { await onResponse?(.open(.briefing)) }
     }
 }
 
@@ -32,7 +32,7 @@ private final class NotificationPresentationDelegate: NSObject, UNUserNotificati
 final class LocalNotificationClient: BriefingNotificationClient {
     private let center = UNUserNotificationCenter.current()
     private let presentationDelegate = NotificationPresentationDelegate()
-    var onResponse: ((HomeworkNotificationResponse) -> Void)? {
+    var onResponse: ((HomeworkNotificationResponse) async -> Void)? {
         didSet { presentationDelegate.onResponse = onResponse }
     }
 

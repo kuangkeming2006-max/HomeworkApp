@@ -26,6 +26,7 @@ public struct BriefingReport: Codable, Equatable, Sendable, Identifiable {
         public let deadline: Date
     }
     public let day: Date
+    public let timeZoneIdentifier: String?
     public let recordedAt: Date
     public let remaining: Int
     public let completedToday: Int
@@ -51,7 +52,8 @@ public enum BriefingService {
         let active = visible.filter { $0.status == .active }
         let dueToday = visible.filter { $0.status != .abandoned && calendar.isDate($0.dueDate, inSameDayAs: now) }
         let urgent = AssignmentQuery.apply(active.filter { $0.dueDate > now }).first
-        return BriefingReport(day: calendar.startOfDay(for: now), recordedAt: now, remaining: active.count,
+        return BriefingReport(day: calendar.startOfDay(for: now), timeZoneIdentifier: calendar.timeZone.identifier,
+                              recordedAt: now, remaining: active.count,
                               completedToday: visible.filter { $0.completedAt.map { calendar.isDate($0, inSameDayAs: now) } ?? false }.count,
                               dueWithin24Hours: active.filter { $0.dueDate > now && $0.dueDate <= now.addingTimeInterval(86400) }.count,
                               overdue: active.filter { $0.dueDate < now }.count, dueToday: dueToday.count,

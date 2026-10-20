@@ -31,7 +31,7 @@ final class AppContainer {
         notificationClient = client; notifications = NotificationCoordinator(client: client)
         client.onResponse = { [weak self] response in
             guard let self else { return }
-            self.handleNotification(response)
+            await self.handleNotificationAndWait(response)
         }
         liveActivities.didChange = { [weak self] in self?.refreshNotifications() }
         openStore()
@@ -98,6 +98,13 @@ final class AppContainer {
             notificationClient.remove(identifiers: ["assignment.\(id.uuidString)"])
             store?.setStatus(id, to: .completed)
         }
+    }
+
+    func handleNotificationAndWait(_ response: HomeworkNotificationResponse) async {
+        handleNotification(response)
+        // Finish OS-granted notification-action work before returning its completion callback.
+        await liveActivities.waitUntilIdle()
+        await notifications.waitUntilIdle()
     }
 
     func setForeground(_ active: Bool) {

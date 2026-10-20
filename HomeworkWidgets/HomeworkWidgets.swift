@@ -10,7 +10,7 @@ struct HomeworkWidgets: WidgetBundle {
 struct HomeworkDeadlineActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: HomeworkActivityAttributes.self) { context in
-            DeadlineActivityContent(state: context.state)
+            DeadlineActivityContent(state: context.state, isStale: context.isStale)
                 .padding().activityBackgroundTint(.black).activitySystemActionForegroundColor(.white)
                 .widgetURL(deepLink(context.attributes.assignmentID))
         } dynamicIsland: { context in
@@ -26,13 +26,13 @@ struct HomeworkDeadlineActivity: Widget {
                     HStack {
                         Text(context.state.course ?? "Keep going").font(.caption).lineLimit(1)
                         Spacer()
-                        DeadlineCountdown(deadline: context.state.deadline).font(.title2.monospacedDigit().bold())
+                        DeadlineCountdown(deadline: context.state.deadline, isStale: context.isStale).font(.title2.monospacedDigit().bold())
                     }
                 }
             } compactLeading: {
                 Image(systemName: "doc.badge.clock").foregroundStyle(.white)
             } compactTrailing: {
-                DeadlineCountdown(deadline: context.state.deadline).font(.caption.monospacedDigit()).frame(maxWidth: 64)
+                DeadlineCountdown(deadline: context.state.deadline, isStale: context.isStale).font(.caption.monospacedDigit()).frame(maxWidth: 64)
             } minimal: {
                 Image(systemName: "clock").foregroundStyle(.white)
             }
