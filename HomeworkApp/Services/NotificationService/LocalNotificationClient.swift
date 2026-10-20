@@ -7,7 +7,7 @@ enum HomeworkNotificationResponse: Sendable { case open(HomeworkRoute), complete
 @MainActor
 private final class NotificationPresentationDelegate: NSObject, UNUserNotificationCenterDelegate {
     var onResponse: ((HomeworkNotificationResponse) -> Void)?
-    func userNotificationCenter(_ center: UNUserNotificationCenter,
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
         [.banner, .list, .sound, .badge]
     }
