@@ -51,14 +51,31 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
         for _ in 0..<7 where !photos.isHittable { form.swipeUp() }
         XCTAssertTrue(photos.isHittable); XCTAssertTrue(app.buttons["attachments.files"].exists)
         photos.tap()
-        XCTAssertTrue(app.buttons["Cancel"].firstMatch.waitForExistence(timeout: 5))
-        capture(app, "Native photo picker")
-        app.buttons["Cancel"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["attachments.files"].waitForExistence(timeout: 5))
+        // The editor also has a Cancel button behind the system picker. Target the
+        // picker's navigation bar, otherwise XCTest tries to scroll to a hidden button.
+        let pickerCancel = app.navigationBars.matching(NSPredicate(format: "identifier != 'New assignment'"))
+            .buttons["Cancel"].firstMatch
+        XCTAssertTrue(pickerCancel.waitForExistence(timeout: 15))
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: pickerCancel)
+        XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed)
+        capture(app, "Native photo picker", includeTree: false)
+        pickerCancel.tap()
+        let editorCancel = app.navigationBars["New assignment"].buttons["Cancel"]
+        XCTAssertTrue(editorCancel.waitForExistence(timeout: 5))
+        let files = app.buttons["attachments.files"]
+        XCTAssertTrue(files.waitForExistence(timeout: 5))
+        for _ in 0..<2 where !files.isHittable { form.swipeUp() }
+        XCTAssertTrue(files.isHittable, "Canceling Photos must return to the editable draft")
+        editorCancel.tap()
+        XCTAssertTrue(app.buttons["assignments.add"].waitForExistence(timeout: 5))
     }
 
-    private func capture(_ app: XCUIApplication, _ name: String) {
+    private func capture(_ app: XCUIApplication, _ name: String, includeTree: Bool = true) {
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
-        let tree = XCTAttachment(string: app.debugDescription); tree.name = name + " accessibility"; tree.lifetime = .keepAlways; add(tree)
+        // Snapshotting a cold remote Photos service can stall its initialization. Other
+        // captures and the failure handler retain full accessibility diagnostics.
+        if includeTree {
+            let tree = XCTAttachment(string: app.debugDescription); tree.name = name + " accessibility"; tree.lifetime = .keepAlways; add(tree)
+        }
     }
 }
