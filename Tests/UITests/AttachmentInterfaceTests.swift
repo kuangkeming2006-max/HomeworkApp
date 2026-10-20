@@ -27,9 +27,12 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
         let previews = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.preview.'"))
         XCTAssertTrue(previews.firstMatch.waitForExistence(timeout: 5))
         previews.element(boundBy: 1).tap()
-        XCTAssertTrue(app.buttons["Done"].firstMatch.waitForExistence(timeout: 5))
+        let closePreview = app.buttons["QLOverlayDoneButtonAccessibilityIdentifier"]
+        XCTAssertTrue(closePreview.waitForExistence(timeout: 15))
+        XCTAssertTrue(app.otherElements["QLPDFViewControllerViewAccessibilityIdentifier"].exists,
+                      "The PDF must render in Quick Look")
         capture(app, "PDF preview")
-        app.buttons["Done"].firstMatch.tap()
+        closePreview.tap()
         if app.tabBars.buttons["Calendar"].exists { app.tabBars.buttons["Calendar"].tap() }
         else {
             if !app.staticTexts["Calendar"].firstMatch.exists { app.buttons["Show Sidebar"].tap() }

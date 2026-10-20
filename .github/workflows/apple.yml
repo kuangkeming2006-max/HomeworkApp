@@ -10,6 +10,11 @@ on:
         type: choice
         options: [full, focused]
         default: full
+      tests:
+        description: Test scope (interfaces is for debugging, not final acceptance)
+        type: choice
+        options: [all, interfaces]
+        default: all
 permissions:
   contents: read
 concurrency:
@@ -93,7 +98,7 @@ jobs:
       - name: Resolve local packages
         run: xcodebuild -resolvePackageDependencies -project HomeworkApp.xcodeproj -scheme HomeworkApp > artifacts/resolve.log 2>&1
       - name: Test on discovered simulator and export screenshots
-        run: python3 scripts/run_apple.py simulator --family ${{ matrix.family }} --appearance ${{ matrix.appearance }} --orientation ${{ matrix.orientation }}
+        run: python3 scripts/run_apple.py simulator --family ${{ matrix.family }} --appearance ${{ matrix.appearance }} --orientation ${{ matrix.orientation }} --test-scope ${{ inputs.tests || 'all' }}
       - name: Upload compact debugging evidence
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()

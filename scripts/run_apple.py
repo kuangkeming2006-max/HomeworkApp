@@ -72,6 +72,7 @@ def simulator(args):
         run(["xcrun", "simctl", "list", "devices", "available", "--json"], "simulators.json")
         selected = select_device(json.loads((ARTIFACTS / "simulators.json").read_text()), args.family, args.runtime)
         selected.update({"appearance": args.appearance, "orientation": args.orientation,
+                         "testScope": args.test_scope,
                          "commit": os.environ.get("GITHUB_SHA"), "runner": os.environ.get("RUNNER_NAME"),
                          "developerDir": os.environ.get("DEVELOPER_DIR")})
         (ARTIFACTS / "device.json").write_text(json.dumps(selected, indent=2))
@@ -82,7 +83,10 @@ def simulator(args):
         run(["xcrun", "simctl", "status_bar", udid, "override", "--time", "9:41",
              "--batteryState", "charged", "--batteryLevel", "100"], "statusbar.log", check=False)
         env = {"TEST_ORIENTATION": args.orientation}
-        run(["xcodebuild", "test", "-project", f"{APP_NAME}.xcodeproj", "-scheme", APP_NAME,
+        filters = [] if args.test_scope == "all" else [
+            "-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
+            "-only-testing:HomeworkAppUITests/PerformanceLayoutTests"]
+        run(["xcodebuild", "test", *filters, "-project", f"{APP_NAME}.xcodeproj", "-scheme", APP_NAME,
              "-destination", f"platform=iOS Simulator,id={udid}", "-destination-timeout", "120",
              "-derivedDataPath", "DerivedData", "-resultBundlePath", str(ARTIFACTS / "Tests.xcresult"),
              "-parallel-testing-enabled", "NO", "CODE_SIGNING_ALLOWED=NO",
@@ -131,6 +135,7 @@ def main():
     parser.add_argument("--appearance", choices=["light", "dark"], default="light")
     parser.add_argument("--orientation", choices=["portrait", "landscape"], default="portrait")
     parser.add_argument("--runtime", type=int, default=27)
+    parser.add_argument("--test-scope", choices=["all", "interfaces"], default="all")
     args = parser.parse_args()
     ARTIFACTS.mkdir(exist_ok=True)
     if args.mode == "device":

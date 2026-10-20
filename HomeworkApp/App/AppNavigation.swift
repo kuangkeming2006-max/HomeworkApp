@@ -123,6 +123,9 @@ struct AppNavigation: View {
         }
         }
       }
+      // Each sidebar destination owns a different navigation path. Keep their identities
+      // distinct so SwiftUI never compares a task UUID path with another column's path.
+      .id(section)
       .safeAreaInset(edge: .bottom) { UndoSnackbar(coordinator: store.undo, undo: store.undoLatest) }
       .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: store.undo.latest?.id)
     }
