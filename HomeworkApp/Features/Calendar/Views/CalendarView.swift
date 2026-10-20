@@ -46,10 +46,12 @@ struct CalendarView: View {
                                         .font(.title2)
                                 }
                                 .accessibilityLabel(assignment.isCompleted ? "Mark incomplete" : "Complete assignment")
+                                .accessibilityIdentifier("calendar.complete.\(assignment.id)")
                                 NavigationLink {
                                     AssignmentDetailView(assignment: assignment, store: store)
                                 } label: { AssignmentRow(assignment: assignment) }
                                 .buttonStyle(.plain)
+                                .accessibilityIdentifier("calendar.open.\(assignment.id)")
                             }
                         }
                     }

@@ -22,10 +22,12 @@ struct AttachmentList: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .buttonStyle(.borderless)
+                    .accessibilityIdentifier("attachment.preview.\(reference.id)")
                     Button("Remove attachment", systemImage: "trash", role: .destructive) {
                         Task { await model.remove(reference) }
                     }
                     .labelStyle(.iconOnly).buttonStyle(.borderless)
+                    .accessibilityIdentifier("attachment.remove.\(reference.id)")
                 }
             }
             HStack {

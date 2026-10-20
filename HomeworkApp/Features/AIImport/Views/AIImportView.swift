@@ -28,8 +28,6 @@ struct AIImportView: View {
             }
             .disabled(model.busy)
             Section {
-                Button("Review assignments") { model.analyze() }
-                    .disabled(model.busy).accessibilityIdentifier("ai.analyze")
                 if model.busy { ProgressView("Reading assignments…") }
                 if let message = model.message { Text(message).accessibilityIdentifier("ai.feedback") }
             } footer: {
@@ -37,7 +35,13 @@ struct AIImportView: View {
             }
         }
         .navigationTitle("Add with AI")
-        .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { model.cancelAnalysis(); dismiss() } } }
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) { Button("Cancel") { model.cancelAnalysis(); dismiss() } }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Review") { model.analyze() }
+                    .disabled(model.busy).accessibilityIdentifier("ai.analyze")
+            }
+        }
         .navigationDestination(isPresented: $model.showPreview) {
             AIImportPreview(model: model) { dismiss() }
         }
