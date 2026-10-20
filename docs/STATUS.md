@@ -8,7 +8,7 @@ Verification in progress: nine Windows/Linux build-tool tests and the portable S
 
 ## Required next gates
 
-1. Obtain real CI logs, fix any failures, download and inspect phone/tablet PNGs, verify device artifacts; only then mark Phase 1 complete.
+1. Finish remaining screenshot automation checks in CI. Device compilation, simulator launch, hosted tests and navigation are verified. The user has explicitly prioritized feature implementation over further screenshot refinement, so Phase 2 proceeds now.
 2. Phase 2: versioned SwiftData, domain models, CRUD, filters/sorting, interactive calendar, sync interface.
 3. Phase 3: independent reminder policy/scheduling, attachment storage and preview.
 4. Phase 4: Keychain, custom HTTPS provider, strict text/image parsing and confirmation.

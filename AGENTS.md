@@ -16,7 +16,7 @@
 - Never use unjustified force unwraps, deprecated APIs or unchecked concurrency workarounds. Use protocols, dependency injection, async/await and explicit isolation.
 
 ## Development gates
-- Follow `docs/STATUS.md`. Phase 1 must have a real successful device build, simulator launch, tests and screenshots before Phase 2. A configured workflow is not verified CI.
+- Follow `docs/STATUS.md`. Real device compilation, simulator launch and UI navigation have been verified. The user subsequently directed feature development to proceed without waiting on screenshot refinements. Keep screenshot checks in CI, but do not block feature implementation on screenshot-only issues. A configured workflow is not verified CI.
 - Commit each phase independently after relevant checks pass. Fix real logs and actual screenshots; never remove tests or weaken assertions to get a pass.
 - The canonical project source is `project.yml`. Run `python3 scripts/install_xcodegen.py` and `.tools/bin/xcodegen generate`; do not hand-edit generated projects. Preserve XcodeGen's adjacent `share` settings resources when installing.
 - Run `python -m unittest discover -s scripts/tests -v` for CI tooling and `swift test --package-path Packages/HomeworkDomain` for domain changes.
