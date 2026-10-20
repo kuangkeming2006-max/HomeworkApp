@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import PhotosUI
+import SwiftUI
 import UniformTypeIdentifiers
 import HomeworkDomain
 
