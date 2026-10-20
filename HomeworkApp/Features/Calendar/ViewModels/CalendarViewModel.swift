@@ -6,7 +6,9 @@ import HomeworkDomain
 final class CalendarViewModel {
     var month: Date
     var selectedDate: Date
-    let calendar: Calendar
+    private(set) var calendar: Calendar
+    private(set) var index: AssignmentDayIndex
+    private(set) var direction = 1
 
     init(now: Date = Date()) {
         var calendar = Calendar(identifier: .gregorian)
@@ -14,6 +16,7 @@ final class CalendarViewModel {
         calendar.timeZone = .current
         calendar.firstWeekday = 2
         self.calendar = calendar
+        index = AssignmentDayIndex(assignments: [], now: now, calendar: calendar)
         month = calendar.dateInterval(of: .month, for: now)?.start ?? now
         selectedDate = calendar.startOfDay(for: now)
     }
@@ -26,7 +29,15 @@ final class CalendarViewModel {
 
     func shiftMonth(_ offset: Int) {
         guard let next = calendar.date(byAdding: .month, value: offset, to: month) else { return }
-        month = next; selectedDate = next
+        selectMonth(next)
+    }
+
+    func selectMonth(_ next: Date) {
+        direction = next >= month ? 1 : -1
+        let day = calendar.component(.day, from: selectedDate)
+        month = calendar.dateInterval(of: .month, for: next)?.start ?? next
+        let maximum = calendar.range(of: .day, in: .month, for: month)?.count ?? 28
+        selectedDate = calendar.date(byAdding: .day, value: min(day, maximum) - 1, to: month) ?? month
     }
 
     func today() {
@@ -34,8 +45,9 @@ final class CalendarViewModel {
         month = calendar.dateInterval(of: .month, for: selectedDate)?.start ?? selectedDate
     }
 
-    func assignments(on day: Date, in values: [Assignment]) -> [Assignment] {
-        AssignmentQuery.apply(values.filter { calendar.isDate($0.dueDate, inSameDayAs: day) }, filter: .all)
+    func rebuild(_ values: [Assignment], now: Date) {
+        calendar.timeZone = .current
+        index = AssignmentDayIndex(assignments: values, now: now, calendar: calendar)
     }
 
     func identifier(for day: Date) -> String {

@@ -16,15 +16,21 @@ final class NavigationTests: HomeworkUITestCase {
         capture("Assignments")
 
         navigate("Calendar", in: app)
-        XCTAssertTrue(app.staticTexts["calendar.month"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["calendar.month"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["calendar.next"].exists)
         XCTAssertTrue(app.buttons["calendar.previous"].exists)
         XCTAssertTrue(app.staticTexts["No assignments this day"].exists)
-        let month = app.staticTexts["calendar.month"].label
+        let month = app.buttons["calendar.month"].label
         app.buttons["calendar.next"].tap()
-        XCTAssertNotEqual(app.staticTexts["calendar.month"].label, month)
+        XCTAssertNotEqual(app.buttons["calendar.month"].label, month)
         app.buttons["calendar.previous"].tap()
-        XCTAssertEqual(app.staticTexts["calendar.month"].label, month)
+        XCTAssertEqual(app.buttons["calendar.month"].label, month)
+        app.buttons["calendar.month"].tap()
+        XCTAssertTrue(app.buttons["calendar.yearPicker"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["calendar.monthPicker"].exists)
+        capture("Month and year")
+        app.buttons["calendar.go"].tap()
+        XCTAssertEqual(app.buttons["calendar.month"].label, month)
         capture("Calendar")
 
         navigate("Settings", in: app)
