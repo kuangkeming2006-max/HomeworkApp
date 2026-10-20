@@ -32,8 +32,18 @@ targets:
     sources:
       - HomeworkApp
       - Resources
+      - Shared
     dependencies:
       - package: HomeworkDomain
+      - target: HomeworkWidgets
+        embed: true
+    info:
+      path: Generated/App-Info.plist
+      properties:
+        NSSupportsLiveActivities: true
+        CFBundleURLTypes:
+          - CFBundleURLName: com.kkm.homework
+            CFBundleURLSchemes: [homework]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kkm.homework
@@ -45,11 +55,32 @@ targets:
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_NSSupportsLiveActivities: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         SUPPORTS_MACCATALYST: NO
+  HomeworkWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - HomeworkWidgets
+      - Shared
+    info:
+      path: Generated/Widget-Info.plist
+      properties:
+        CFBundleDisplayName: Homework Deadlines
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kkm.homework.widgets
+        PRODUCT_NAME: HomeworkWidgets
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SKIP_INSTALL: YES
+        APPLICATION_EXTENSION_API_ONLY: YES
   HomeworkAppTests:
     type: bundle.unit-test
     platform: iOS

@@ -15,6 +15,7 @@ struct UndoSnackbar: View {
                 Button("Undo", action: undo).fontWeight(.semibold).accessibilityIdentifier("assignments.undo")
             }
             .padding().background(.regularMaterial, in: RoundedRectangle(cornerRadius: 18))
+            .frame(maxWidth: 600)
             .padding(.horizontal).padding(.bottom, 6)
             .accessibilityElement(children: .contain)
             .transition(.move(edge: .bottom).combined(with: .opacity))

@@ -64,7 +64,7 @@ struct CalendarView: View {
                                     Image(systemName: assignment.status == .abandoned ? "minus.circle.fill" : assignment.isCompleted ? "checkmark.circle.fill" : "circle")
                                         .font(.title2).frame(minWidth: 32, minHeight: 44)
                                 }
-                                .accessibilityLabel(assignment.isCompleted ? "Mark incomplete" : "Complete assignment")
+                                .accessibilityLabel("Change assignment status").accessibilityValue(assignment.status.label)
                                 .accessibilityIdentifier("calendar.complete.\(assignment.id)")
                                 NavigationLink {
                                     AssignmentDetailView(assignment: assignment, store: store)
@@ -85,7 +85,6 @@ struct CalendarView: View {
         }
         .animation(reduceMotion ? nil : .smooth(duration: 0.25), value: model.month)
         .animation(reduceMotion ? nil : .smooth(duration: 0.2), value: model.selectedDate)
-        .safeAreaInset(edge: .bottom) { UndoSnackbar(coordinator: store.undo, undo: store.undoLatest) }
         .navigationTitle("Calendar")
         .environment(\.calendar, model.calendar)
         .toolbar {

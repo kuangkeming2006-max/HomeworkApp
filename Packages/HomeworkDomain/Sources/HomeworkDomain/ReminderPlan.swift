@@ -49,3 +49,8 @@ public protocol ReminderNotificationClient {
     func remove(identifiers: [String])
     func add(_ reminder: PlannedReminder) async throws
 }
+
+@MainActor
+public protocol BriefingNotificationClient: ReminderNotificationClient {
+    func addBriefing(_ briefing: PlannedBriefing) async throws
+}

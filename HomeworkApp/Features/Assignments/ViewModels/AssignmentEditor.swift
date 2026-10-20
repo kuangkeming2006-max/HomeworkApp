@@ -70,7 +70,8 @@ final class AssignmentEditor {
                 throw AssignmentError.invalid("This assignment's status changed in another window. Restore it before choosing a different status.")
             }
             let changes = pending
-            try store.update(draft.id) { value in
+            let undoMessage = pendingStatus.map { $0 == .active ? "Assignment restored" : "Assignment \($0.rawValue)" }
+            try store.update(draft.id, undoMessage: undoMessage) { value in
                 for change in changes { change(&value) }
             }
             pending.removeAll()

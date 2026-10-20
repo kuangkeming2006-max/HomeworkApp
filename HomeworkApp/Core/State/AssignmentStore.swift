@@ -54,12 +54,19 @@ final class AssignmentStore {
         didChange?()
     }
 
-    func update(_ id: UUID, change: (inout Assignment) -> Void) throws {
+    func update(_ id: UUID, undoMessage: String? = nil, change: (inout Assignment) -> Void) throws {
         guard var value = assignment(id) else { throw AssignmentError.notFound }
+        let before = AssignmentDisposition(value)
+        let priorToken = dispositionTokens[id] ?? UUID()
+        dispositionTokens[id] = priorToken
         change(&value)
         value.updatedAt = max(Date(), value.updatedAt.addingTimeInterval(0.001))
         value.localRevision += 1
         try save([value])
+        if let undoMessage, AssignmentDisposition(value) != before {
+            undo.record(id: id, before: before, after: AssignmentDisposition(value), message: undoMessage,
+                        previousToken: priorToken, resultingToken: dispositionTokens[id] ?? priorToken)
+        }
     }
 
     func toggleCompletion(_ id: UUID) {
@@ -80,15 +87,7 @@ final class AssignmentStore {
     }
 
     private func action(_ id: UUID, message: String, change: (inout Assignment) -> Void) {
-        guard let before = assignment(id) else { return }
-        let priorToken = dispositionTokens[id] ?? UUID()
-        dispositionTokens[id] = priorToken
-        perform {
-            try update(id, change: change)
-            guard let after = record(id) else { return }
-            undo.record(id: id, before: AssignmentDisposition(before), after: AssignmentDisposition(after), message: message,
-                        previousToken: priorToken, resultingToken: dispositionTokens[id] ?? priorToken)
-        }
+        perform { try update(id, undoMessage: message, change: change) }
     }
 
     func undoLatest() {

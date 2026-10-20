@@ -3,6 +3,7 @@
 .swiftpm/
 .tools/
 DerivedData/
+Generated/
 artifacts/
 *.xcresult/
 *.xcodeproj/

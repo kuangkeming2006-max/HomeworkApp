@@ -1,4 +1,12 @@
-# Delivery status — v0.1.0
+# Redesign status — in progress
+
+The v0.1.0 delivery below is preserved. Redesign phases A–E are being implemented without changing `com.kkm.homework`, attachment storage or Keychain identifiers.
+
+- [Installed SDK probe](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39418822424) passed: stable Xcode 27 typechecks the modern ActivityKit `start:` overload, alert configuration and pending state with an iOS 26 deployment minimum.
+- Real V1 SQLite migration, disposition undo, search/status domain tests and unsigned device builds have passed. UI runs identified adaptive scrolling/control hit-region issues; fixes preserve the original assertions. No final redesign acceptance is claimed yet.
+- [Current calendar and regression validation](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39426889977) is running. Notifications, Live Activities and Briefing are prepared for their subsequent validation stage.
+
+## Previous delivery — v0.1.0
 
 Application source/tag: `97691288b0f91caaa6d655e626a920ceb92b6da2` / `v0.1.0`.
 

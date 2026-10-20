@@ -41,7 +41,7 @@ struct AssignmentListView: View {
                                 .font(.title2).frame(minWidth: 32, minHeight: 44)
                         }
                         .buttonStyle(.borderless)
-                        .accessibilityLabel(assignment.isCompleted ? "Mark incomplete" : "Complete assignment")
+                        .accessibilityLabel("Change assignment status").accessibilityValue(assignment.status.label)
                         .accessibilityIdentifier("assignment.complete.\(assignment.id)")
                         Button { onOpen(assignment.id) } label: {
                             AssignmentRow(assignment: assignment, now: context.date)
@@ -83,7 +83,7 @@ struct AssignmentListView: View {
             .accessibilityIdentifier("assignments.list")
             .overlay {
                 if visible.isEmpty {
-                    ContentUnavailableView(filter == .completed ? "No completed assignments" : "No assignments yet",
+                    ContentUnavailableView(emptyTitle,
                                            systemImage: "checklist",
                                            description: Text("Add coursework to keep track of your deadlines."))
                         .accessibilityIdentifier("assignments.empty")
@@ -105,8 +105,6 @@ struct AssignmentListView: View {
             pageDirection = (cases.firstIndex(of: next) ?? 0) >= (cases.firstIndex(of: previous) ?? 0) ? 1 : -1
             projection.refilter(filter, search: search)
         }
-        .safeAreaInset(edge: .bottom) { UndoSnackbar(coordinator: store.undo, undo: store.undoLatest) }
-        .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: store.undo.latest?.id)
         .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: filter)
         .confirmationDialog("Assignment status", isPresented: $statusDialog,
                             titleVisibility: .visible, presenting: actionTarget) { target in
@@ -151,6 +149,15 @@ struct AssignmentListView: View {
     private var categoryPicker: some View {
         Picker("Category", selection: $filter) {
             ForEach(AssignmentFilter.allCases) { Text($0.rawValue).tag($0) }
+        }
+    }
+
+    private var emptyTitle: String {
+        if !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "No matching assignments" }
+        switch filter {
+        case .completed: return "No completed assignments"
+        case .abandoned: return "No abandoned assignments"
+        case .upcoming, .all: return "No assignments yet"
         }
     }
 

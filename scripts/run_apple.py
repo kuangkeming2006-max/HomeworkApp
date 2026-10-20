@@ -5,11 +5,12 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
-import zipfile
 
 from simulators import select_device
 from project_metadata import project_name
 from screenshots import png_dimensions
+from validate_bundle import validate_app_bundle
+from package_ipa import package_ipa
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = ROOT / "artifacts"
@@ -29,7 +30,11 @@ def run(command, log, check=True, extra_env=None, timeout=900):
                 raise RuntimeError(f"Command timed out; inspect {log}") from None
             return 124
     if check and result.returncode:
-        print((ARTIFACTS / log).read_text(errors="replace")[-24000:], flush=True)
+        contents = (ARTIFACTS / log).read_text(errors="replace")
+        errors = [line for line in contents.splitlines() if ": error:" in line]
+        if errors:
+            print("Compiler/test failures:\n" + "\n".join(errors[:30]), flush=True)
+        print(contents[-24000:], flush=True)
         raise RuntimeError(f"Command failed ({result.returncode}); inspect {log}")
     return result.returncode
 
@@ -52,8 +57,11 @@ def collect_diagnostics(udid=None):
              "--output-path", str(ARTIFACTS / "screenshots")], "export-screenshots.log", check=False, timeout=90)
     build_log = ARTIFACTS / "xcodebuild.log"
     if build_log.exists():
-        warnings = [line for line in build_log.read_text(errors="replace").splitlines() if "warning:" in line]
+        lines = build_log.read_text(errors="replace").splitlines()
+        warnings = [line for line in lines if "warning:" in line]
         (ARTIFACTS / "warnings.txt").write_text("\n".join(warnings))
+        (ARTIFACTS / "build-errors.txt").write_text("\n".join(line for line in lines if ": error:" in line))
+        (ARTIFACTS / "performance.txt").write_text("\n".join(line for line in lines if "PERFORMANCE " in line))
 
 
 def simulator(args):
@@ -80,7 +88,7 @@ def simulator(args):
              "-parallel-testing-enabled", "NO", "CODE_SIGNING_ALLOWED=NO",
              "-collect-test-diagnostics", "never",
              "-test-timeouts-enabled", "YES", "-maximum-test-execution-time-allowance", "180",
-             f"TEST_ORIENTATION={args.orientation}"], "xcodebuild.log", extra_env=env)
+             f"TEST_ORIENTATION={args.orientation}"], "xcodebuild.log", extra_env=env, timeout=1200)
     finally:
         collect_diagnostics(udid)
     screenshots = sorted((ARTIFACTS / "screenshots").rglob("*.png"))
@@ -104,13 +112,12 @@ def device_build():
         app = ROOT / f"DerivedData/Build/Products/Release-iphoneos/{APP_NAME}.app"
         if not app.is_dir():
             raise RuntimeError("No device .app was produced")
+        (ARTIFACTS / "bundle-validation.json").write_text(json.dumps(validate_app_bundle(app), indent=2))
         run(["file", str(app / APP_NAME)], "binary-architecture.log")
         target = ARTIFACTS / "unsigned-device"
         target.mkdir(exist_ok=True)
-        with zipfile.ZipFile(target / f"{APP_NAME}-unsigned.ipa", "w", zipfile.ZIP_DEFLATED) as archive:
-            for source in sorted(app.rglob("*")):
-                if source.is_file():
-                    archive.write(source, f"Payload/{APP_NAME}.app/" + source.relative_to(app).as_posix())
+        package_ipa(app, target / f"{APP_NAME}-unsigned.ipa")
+        package_ipa(app, target / f"{APP_NAME}-without-widgets-unsigned.ipa", include_widgets=False)
         shutil.make_archive(str(target / f"{APP_NAME}-unsigned-app"), "zip", app.parent, app.name)
         shutil.copy2(ROOT / "docs/INSTALLATION.md", target / "INSTALLATION.md")
     finally:

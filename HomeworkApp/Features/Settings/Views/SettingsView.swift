@@ -10,6 +10,7 @@ struct SettingsView: View {
     let backupService: (any BackupService)?
     let secrets: any SecretStore
     let buildProvider: LLMProviderBuilder
+    var liveActivities: LiveActivityCoordinator? = nil
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -46,6 +47,24 @@ struct SettingsView: View {
                 }
                 if let error = notifications.errorMessage { Text(error).foregroundStyle(.red) }
             }
+            Section("Live Activities") {
+                NativeToggleRow(title: "Deadline countdown", isOn: $preferences.liveActivitiesEnabled, identifier: "settings.liveActivities")
+                if let liveActivities {
+                    LabeledContent("Status", value: liveActivities.status)
+                    if let error = liveActivities.errorMessage { Text(error).font(.caption).foregroundStyle(.secondary) }
+                }
+                Text("Shows one urgent assignment during its final four hours. The system controls scheduled starts and Dynamic Island presentation. Ordinary reminders remain available when unsupported.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            BriefingSettingsSection(preferences: preferences)
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("--preview-activities") {
+                Section("Layout testing") {
+                    NavigationLink("Live Activity layouts") { ActivityLayoutGallery() }
+                        .accessibilityIdentifier("settings.activityLayouts")
+                }
+            }
+            #endif
             Section {
                 ReminderPicker(value: $preferences.defaultReminder)
             } header: { Text("Default reminder") }

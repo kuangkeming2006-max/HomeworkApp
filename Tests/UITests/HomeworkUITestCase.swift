@@ -11,6 +11,21 @@ class HomeworkUITestCase: XCTestCase {
         }
     }
 
+    override func tearDown() async throws {
+        await MainActor.run {
+            if let failures = testRun?.failureCount, failures > 0 {
+                let screenshot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                screenshot.name = "Failure screen"; screenshot.lifetime = .keepAlways; add(screenshot)
+                let app = XCUIApplication()
+                if app.state == .runningForeground {
+                    let tree = XCTAttachment(string: app.debugDescription)
+                    tree.name = "Failure accessibility tree"; tree.lifetime = .keepAlways; add(tree)
+                }
+            }
+        }
+        try await super.tearDown()
+    }
+
     @MainActor
     func selectCategory(_ name: String, app: XCUIApplication) {
         let segment = app.segmentedControls.buttons[name]

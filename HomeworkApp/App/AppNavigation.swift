@@ -1,9 +1,11 @@
 import SwiftUI
 import UIKit
+import HomeworkDomain
 
 enum AppSection: String, CaseIterable, Identifiable {
     case assignments = "Assignments"
     case calendar = "Calendar"
+    case briefing = "Briefing"
     case settings = "Settings"
 
     var id: String { rawValue }
@@ -11,6 +13,7 @@ enum AppSection: String, CaseIterable, Identifiable {
         switch self {
         case .assignments: "checklist"
         case .calendar: "calendar"
+        case .briefing: "chart.pie"
         case .settings: "gearshape"
         }
     }
@@ -20,7 +23,10 @@ enum AppSection: String, CaseIterable, Identifiable {
 struct AppNavigation: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var selection: AppSection? = .assignments
+    @State private var requestedAssignment: AssignmentNavigationRequest?
+    @State private var education = false
     let container: AppContainer
 
     var body: some View {
@@ -43,10 +49,26 @@ struct AppNavigation: View {
         .environment(\.attachmentService, container.attachmentService)
         .environment(\.llmProviderFactory, { [container] in try container.makeLLMProvider() })
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { container.refreshServices() }
+            container.setForeground(phase == .active)
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             container.refreshServices()
+        }
+        .onOpenURL { url in if let route = HomeworkRoute(url: url) { open(route) } }
+        .onChange(of: container.pendingRoute, initial: true) { _, route in
+            if let route { open(route); container.pendingRoute = nil }
+        }
+        .task {
+            let testing = ProcessInfo.processInfo.arguments.contains("--uitesting")
+            education = !container.preferences.notificationEducationSeen && !testing
+            #if DEBUG
+            if testing, ProcessInfo.processInfo.arguments.contains("--show-onboarding") { education = true }
+            #endif
+        }
+        .sheet(isPresented: $education, onDismiss: { container.preferences.notificationEducationSeen = true }) {
+            NotificationEducationView(enable: { await container.notifications.enable() }, finish: {
+                container.preferences.notificationEducationSeen = true; education = false
+            })
         }
     }
 
@@ -64,9 +86,9 @@ struct AppNavigation: View {
                 destination(selection ?? .assignments, store: store)
             }
         } else {
-            TabView {
+            TabView(selection: $selection) {
                 ForEach(AppSection.allCases) { section in
-                    Tab {
+                    Tab(value: Optional(section)) {
                         destination(section, store: store)
                     } label: {
                         Label(section.rawValue, systemImage: section.symbol)
@@ -79,14 +101,26 @@ struct AppNavigation: View {
 
     @ViewBuilder
     private func destination(_ section: AppSection, store: AssignmentStore) -> some View {
+      Group {
         switch section {
-        case .assignments: AssignmentWorkspace(store: store)
+        case .assignments: AssignmentWorkspace(store: store, request: requestedAssignment)
         case .calendar: NavigationStack { CalendarView(store: store) }
+        case .briefing: NavigationStack { BriefingView(store: store, history: container.briefingHistory) }
         case .settings: NavigationStack {
             SettingsView(version: container.version, preferences: container.preferences,
                          notifications: container.notifications, store: store, backupService: container.backupService,
-                         secrets: container.secrets, buildProvider: container.providerBuilder)
+                         secrets: container.secrets, buildProvider: container.providerBuilder, liveActivities: container.liveActivities)
         }
+        }
+      }
+      .safeAreaInset(edge: .bottom) { UndoSnackbar(coordinator: store.undo, undo: store.undoLatest) }
+      .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: store.undo.latest?.id)
+    }
+
+    private func open(_ route: HomeworkRoute) {
+        switch route {
+        case .assignment(let id): selection = .assignments; requestedAssignment = .init(assignmentID: id)
+        case .briefing: selection = .briefing
         }
     }
 }

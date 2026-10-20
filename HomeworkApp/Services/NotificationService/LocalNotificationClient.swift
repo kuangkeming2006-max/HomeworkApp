@@ -2,19 +2,46 @@ import Foundation
 import UserNotifications
 import HomeworkDomain
 
+enum HomeworkNotificationResponse: Sendable { case open(HomeworkRoute), complete(UUID) }
+
+@MainActor
 private final class NotificationPresentationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    var onResponse: ((HomeworkNotificationResponse) -> Void)?
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        [.banner, .list, .sound, .badge]
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                            didReceive response: UNNotificationResponse) async {
+        let action = response.actionIdentifier
+        let identifier = response.notification.request.content.userInfo["assignmentID"] as? String
+        let briefing = response.notification.request.content.userInfo["route"] as? String == "briefing"
+        await respond(action: action, identifier: identifier, briefing: briefing)
+    }
+
+    private func respond(action: String, identifier: String?, briefing: Bool) {
+        guard [UNNotificationDefaultActionIdentifier, "assignment.complete", "assignment.view"].contains(action) else { return }
+        if let identifier, let id = UUID(uuidString: identifier) {
+            onResponse?(action == "assignment.complete" ? .complete(id) : .open(.assignment(id)))
+        } else if briefing { onResponse?(.open(.briefing)) }
     }
 }
 
 @MainActor
-final class LocalNotificationClient: ReminderNotificationClient {
+final class LocalNotificationClient: BriefingNotificationClient {
     private let center = UNUserNotificationCenter.current()
     private let presentationDelegate = NotificationPresentationDelegate()
+    var onResponse: ((HomeworkNotificationResponse) -> Void)? {
+        didSet { presentationDelegate.onResponse = onResponse }
+    }
 
-    init() { center.delegate = presentationDelegate }
+    init() {
+        center.delegate = presentationDelegate
+        let complete = UNNotificationAction(identifier: "assignment.complete", title: "Complete", options: [])
+        let view = UNNotificationAction(identifier: "assignment.view", title: "View assignment", options: [.foreground])
+        center.setNotificationCategories([UNNotificationCategory(identifier: "assignment", actions: [complete, view], intentIdentifiers: [])])
+    }
 
     func permission() async -> NotificationPermission {
         let settings = await center.notificationSettings()
@@ -27,12 +54,15 @@ final class LocalNotificationClient: ReminderNotificationClient {
     }
 
     func requestPermission() async throws -> Bool {
-        try await center.requestAuthorization(options: [.alert, .badge, .sound])
+        guard await permission() == .notDetermined else { return await permission() == .allowed }
+        return try await center.requestAuthorization(options: [.alert, .badge, .sound])
     }
 
     func pendingIdentifiers() async -> [String] {
         await center.pendingNotificationRequests().map(\.identifier)
     }
+
+    func clearBadge() { Task { try? await center.setBadgeCount(0) } }
 
     func remove(identifiers: [String]) {
         center.removePendingNotificationRequests(withIdentifiers: identifiers)
@@ -43,18 +73,28 @@ final class LocalNotificationClient: ReminderNotificationClient {
         let content = UNMutableNotificationContent()
         content.title = reminder.title
         content.subtitle = reminder.course ?? "Assignment reminder"
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US")
-        formatter.timeZone = TimeZone(identifier: reminder.timeZone)
-        formatter.dateStyle = .medium; formatter.timeStyle = .short
-        content.body = "Due \(formatter.string(from: reminder.dueDate))."
+        content.body = ReminderMessage.body(deadline: reminder.dueDate, fireDate: reminder.fireDate)
         content.sound = .default
+        content.badge = 1
+        content.categoryIdentifier = "assignment"
+        content.threadIdentifier = "assignment.\(reminder.assignmentID)"
         content.userInfo = ["assignmentID": reminder.assignmentID.uuidString]
+        try await schedule(identifier: reminder.identifier, content: content, fireDate: reminder.fireDate)
+    }
+
+    func addBriefing(_ briefing: PlannedBriefing) async throws {
+        let content = UNMutableNotificationContent()
+        content.title = briefing.title; content.body = briefing.body; content.sound = .default
+        content.userInfo = ["route": "briefing"]; content.threadIdentifier = "briefing"
+        try await schedule(identifier: briefing.identifier, content: content, fireDate: briefing.fireDate)
+    }
+
+    private func schedule(identifier: String, content: UNMutableNotificationContent, fireDate: Date) async throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .current
-        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: reminder.fireDate)
+        var components = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
         components.timeZone = calendar.timeZone
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-        try await center.add(UNNotificationRequest(identifier: reminder.identifier, content: content, trigger: trigger))
+        try await center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
     }
 }
