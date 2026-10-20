@@ -32,8 +32,12 @@ private struct CandidateForm: View {
 
     var body: some View {
         Section {
-            Toggle("Import this assignment", isOn: $candidate.selected)
-                .accessibilityIdentifier("ai.select.\(index)")
+            HStack {
+                Text("Import this assignment")
+                Spacer()
+                Toggle("Import this assignment", isOn: $candidate.selected).labelsHidden().fixedSize()
+                    .accessibilityIdentifier("ai.select.\(index)")
+            }
             if candidate.selected {
                 TextField("Title", text: $candidate.assignment.title).accessibilityIdentifier("ai.title.\(index)")
                 TextField("Course", text: Binding(get: { candidate.assignment.course ?? "" }, set: { candidate.assignment.course = $0 }))

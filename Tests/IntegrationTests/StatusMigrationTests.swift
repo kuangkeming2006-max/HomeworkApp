@@ -58,9 +58,24 @@ final class StatusMigrationTests: XCTestCase {
         store.undoLatest(); XCTAssertEqual(store.assignment(value.id)?.completedAt, completedAt)
         store.undoLatest(); XCTAssertEqual(store.assignment(value.id)?.status, .active)
         store.setStatus(value.id, to: .abandoned)
-        try store.update(value.id) { $0.transition(to: .completed, at: Date()) }
+        try store.update(value.id) { $0.transition(to: .active, at: Date()); $0.transition(to: .completed, at: Date()) }
         store.undoLatest()
         XCTAssertEqual(store.assignment(value.id)?.status, .completed)
         XCTAssertEqual(try repository.fetchAll().count, 1)
+    }
+
+    func testOldUndoCannotOverrideNewerRestoreToIdenticalActiveFields() throws {
+        let repository = SwiftDataAssignmentRepository(container: try SwiftDataAssignmentRepository.makeContainer(inMemory: true))
+        let value = Assignment(title: "Report", dueDate: Date())
+        try repository.save([value])
+        let store = try AssignmentStore(repository: repository)
+        store.setStatus(value.id, to: .completed)
+        store.setStatus(value.id, to: .active)
+        try store.update(value.id) { $0.transition(to: .abandoned, at: Date()) }
+        try store.update(value.id) { $0.transition(to: .active, at: Date()) }
+        store.undoLatest()
+        XCTAssertEqual(store.assignment(value.id)?.status, .active)
+        XCTAssertNil(store.assignment(value.id)?.completedAt)
+        XCTAssertNil(store.assignment(value.id)?.abandonedAt)
     }
 }

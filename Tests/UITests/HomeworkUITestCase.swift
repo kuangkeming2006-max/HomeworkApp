@@ -2,10 +2,22 @@ import XCTest
 
 @MainActor
 class HomeworkUITestCase: XCTestCase {
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    override func setUp() async throws {
+        try await super.setUp()
         let orientation = ProcessInfo.processInfo.environment["TEST_ORIENTATION"] ?? "portrait"
         XCTAssertTrue(["portrait", "landscape"].contains(orientation))
-        XCUIDevice.shared.orientation = orientation == "landscape" ? .landscapeLeft : .portrait
+        await MainActor.run {
+            XCUIDevice.shared.orientation = orientation == "landscape" ? .landscapeLeft : .portrait
+        }
+    }
+
+    @MainActor
+    func selectCategory(_ name: String, app: XCUIApplication) {
+        let segment = app.segmentedControls.buttons[name]
+        if segment.exists { segment.tap() }
+        else {
+            app.buttons["assignments.category"].tap()
+            app.buttons[name].tap()
+        }
     }
 }

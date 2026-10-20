@@ -6,7 +6,8 @@ struct AssignmentRow: View {
     var now: Date = .now
 
     var body: some View {
-            let overdue = assignment.status == .active && assignment.dueDate < now
+            let classification = DeadlineClassification.classify(assignment, now: now)
+            let overdue = classification == .overdue
             VStack(alignment: .leading, spacing: 5) {
                 Text(assignment.title).font(.body.weight(.semibold))
                     .lineLimit(2)
@@ -20,8 +21,12 @@ struct AssignmentRow: View {
                     Text(assignment.dueDate, format: .dateTime.month(.abbreviated).day().hour().minute())
                         .foregroundColor(overdue ? .red : .secondary)
                     if overdue { Text("Overdue").foregroundStyle(.red) }
-                    else if assignment.status == .active, assignment.dueDate.timeIntervalSince(now) < 86_400 {
-                        Text("Due soon").foregroundStyle(.orange)
+                    else if classification == .reminderReached {
+                        Text("Reminder reached").foregroundStyle(.orange)
+                    } else if classification == .dueSoon {
+                        Text("Due soon").foregroundStyle(.secondary)
+                    } else if assignment.status == .abandoned {
+                        Text("Abandoned").foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
                     if !assignment.attachments.isEmpty {

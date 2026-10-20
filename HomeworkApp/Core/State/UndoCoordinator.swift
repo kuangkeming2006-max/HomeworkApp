@@ -10,15 +10,19 @@ final class UndoCoordinator {
         let before: AssignmentDisposition
         let after: AssignmentDisposition
         let message: String
+        let previousToken: UUID
+        let resultingToken: UUID
         let expiresAt: Date
     }
     private(set) var actions: [Action] = []
     var latest: Action? { actions.last }
     private var expiration: Task<Void, Never>?
 
-    func record(id: UUID, before: AssignmentDisposition, after: AssignmentDisposition, message: String) {
+    func record(id: UUID, before: AssignmentDisposition, after: AssignmentDisposition, message: String,
+                previousToken: UUID, resultingToken: UUID) {
         prune()
         actions.append(Action(assignmentID: id, before: before, after: after, message: message,
+                              previousToken: previousToken, resultingToken: resultingToken,
                               expiresAt: Date().addingTimeInterval(5)))
         scheduleExpiry()
     }

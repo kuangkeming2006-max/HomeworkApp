@@ -27,6 +27,7 @@ final class StatusTests: XCTestCase {
         var object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(task)) as? [String: Any])
         object.removeValue(forKey: "status"); object.removeValue(forKey: "abandonedAt")
         XCTAssertEqual(try JSONDecoder().decode(Assignment.self, from: JSONSerialization.data(withJSONObject: object)), task)
+        task.transition(to: .active, at: Date())
         task.transition(to: .abandoned, at: Date())
         XCTAssertEqual(try JSONDecoder().decode(Assignment.self, from: JSONEncoder().encode(task)), task)
     }

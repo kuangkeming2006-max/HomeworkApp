@@ -20,7 +20,7 @@ final class FeatureFlowTests: HomeworkUITestCase {
         app.buttons["Delete"].tap()
         XCTAssertEqual(rows.count, 2)
         XCTAssertFalse(rows.allElementsBoundByIndex.contains { $0.label.contains("Low earlier") })
-        app.segmentedControls.buttons["All"].tap()
+        selectCategory("All", app: app)
         XCTAssertEqual(rows.count, 2, "Deleted assignments must also be hidden from All")
     }
 
@@ -31,13 +31,14 @@ final class FeatureFlowTests: HomeworkUITestCase {
         app.launch()
         let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 15)); row.tap()
+        let form = app.descendants(matching: .any).matching(identifier: "editor.form").firstMatch
         let reminder = app.buttons["reminder.preset"]
-        for _ in 0..<5 where !reminder.isHittable { app.swipeUp() }
+        for _ in 0..<5 where !reminder.isHittable { form.swipeUp() }
         XCTAssertTrue(reminder.isHittable); reminder.tap()
         app.buttons["3 hours before"].tap()
         XCTAssertTrue(reminder.label.contains("3 hours before"))
         let files = app.buttons["attachments.files"]
-        for _ in 0..<4 where !files.isHittable { app.swipeUp() }
+        for _ in 0..<4 where !files.isHittable { form.swipeUp() }
         XCTAssertTrue(files.isHittable)
         XCTAssertTrue(app.buttons["attachments.photos"].exists)
         // File copying, persistence, removal and traversal rejection use real files in hosted tests.

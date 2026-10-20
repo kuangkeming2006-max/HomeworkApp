@@ -19,11 +19,11 @@ final class AssignmentFlowTests: HomeworkUITestCase {
         let completion = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.complete.'")).firstMatch
         completion.tap()
         app.buttons["Complete"].tap()
-        app.segmentedControls.buttons["Completed"].tap()
+        selectCategory("Completed", app: app)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         completion.tap()
         app.buttons["Restore"].tap()
-        app.segmentedControls.buttons["Upcoming"].tap()
+        selectCategory("Upcoming", app: app)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         row.tap()
         XCTAssertEqual(app.textFields["editor.title"].value as? String, "Networking lab report")

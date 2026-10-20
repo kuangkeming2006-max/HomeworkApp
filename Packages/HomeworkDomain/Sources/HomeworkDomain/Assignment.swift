@@ -70,6 +70,7 @@ public struct Assignment: Codable, Equatable, Identifiable, Sendable {
     }
 
     public mutating func transition(to target: AssignmentStatus, at date: Date) {
+        guard status != target, status.canTransition(to: target) else { return }
         status = target
         completedAt = target == .completed ? max(date, createdAt) : nil
         abandonedAt = target == .abandoned ? max(date, createdAt) : nil

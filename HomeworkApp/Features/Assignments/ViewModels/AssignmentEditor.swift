@@ -35,6 +35,7 @@ final class AssignmentEditor {
     }
 
     func setStatus(_ status: AssignmentStatus) {
+        guard draft.status.canTransition(to: status), draft.status != status else { return }
         let date = Date()
         set(\.status, status)
         set(\.completedAt, status == .completed ? max(date, draft.createdAt) : nil)

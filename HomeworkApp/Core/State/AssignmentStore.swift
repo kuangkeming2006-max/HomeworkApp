@@ -10,6 +10,7 @@ final class AssignmentStore {
     var didChange: (@MainActor () -> Void)?
     var defaultReminder: ReminderConfiguration = .none
     let undo = UndoCoordinator()
+    private var dispositionTokens: [UUID: UUID] = [:]
 
     init(repository: any AssignmentRepository) throws {
         self.repository = repository
@@ -29,6 +30,11 @@ final class AssignmentStore {
 
     func save(_ values: [Assignment]) throws {
         try repository.save(values)
+        for value in values {
+            if let prior = assignments.first(where: { $0.id == value.id }), AssignmentDisposition(prior) != AssignmentDisposition(value) {
+                dispositionTokens[value.id] = UUID()
+            }
+        }
         let changes = Dictionary(uniqueKeysWithValues: values.map { ($0.id, $0) })
         let existing = Set(assignments.map(\.id))
         assignments = assignments.map { changes[$0.id] ?? $0 } + values.filter { !existing.contains($0.id) }
@@ -49,6 +55,8 @@ final class AssignmentStore {
     }
 
     func setStatus(_ id: UUID, to status: AssignmentStatus) {
+        guard let current = assignment(id), current.status != status,
+              current.status == .active || status == .active else { return }
         action(id, message: status == .active ? "Assignment restored" : "Assignment \(status.rawValue)") {
             $0.transition(to: status, at: Date())
         }
@@ -60,10 +68,13 @@ final class AssignmentStore {
 
     private func action(_ id: UUID, message: String, change: (inout Assignment) -> Void) {
         guard let before = assignment(id) else { return }
+        let priorToken = dispositionTokens[id] ?? UUID()
+        dispositionTokens[id] = priorToken
         perform {
             try update(id, change: change)
             guard let after = assignments.first(where: { $0.id == id }) else { return }
-            undo.record(id: id, before: AssignmentDisposition(before), after: AssignmentDisposition(after), message: message)
+            undo.record(id: id, before: AssignmentDisposition(before), after: AssignmentDisposition(after), message: message,
+                        previousToken: priorToken, resultingToken: dispositionTokens[id] ?? priorToken)
         }
     }
 
@@ -71,11 +82,14 @@ final class AssignmentStore {
         guard let action = undo.takeLatest(),
               var current = assignments.first(where: { $0.id == action.assignmentID }) else { return }
         // Content edits in another window survive; newer disposition changes are never overwritten.
-        guard AssignmentDisposition(current) == action.after else { return }
+        guard dispositionTokens[current.id] == action.resultingToken, AssignmentDisposition(current) == action.after else { return }
         action.before.apply(to: &current)
         current.updatedAt = max(Date(), current.updatedAt.addingTimeInterval(0.001))
         current.localRevision += 1
-        perform { try save([current]) }
+        perform {
+            try save([current])
+            dispositionTokens[current.id] = action.previousToken
+        }
     }
 
     func perform(_ work: () throws -> Void) {

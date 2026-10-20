@@ -32,6 +32,7 @@ struct AssignmentDetailView: View {
                 Picker("Time zone", selection: binding(\.dueTimeZone)) {
                     ForEach(TimeZone.knownTimeZoneIdentifiers, id: \.self) { Text($0).tag($0) }
                 }
+                .pickerStyle(.menu)
                 .accessibilityIdentifier("editor.timezone")
             }
             Section("Notes") {
@@ -59,7 +60,7 @@ struct AssignmentDetailView: View {
                     Toggle("Completed", isOn: Binding(get: { editor.draft.isCompleted }, set: { editor.setCompleted($0) }))
                         .accessibilityIdentifier("editor.completed")
                     Picker("Status", selection: Binding(get: { editor.draft.status }, set: { editor.setStatus($0) })) {
-                        ForEach(AssignmentStatus.allCases) { Text($0.label).tag($0) }
+                        ForEach(AssignmentStatus.allCases) { Text($0.label).tag($0).disabled(!editor.draft.status.canTransition(to: $0)) }
                     }.accessibilityIdentifier("editor.status")
                 }
             }
@@ -95,7 +96,7 @@ struct AssignmentDetailView: View {
         }
         .onDisappear {
             editor.flush()
-            if let attachmentModel { Task { await attachmentModel.close() } }
+            if editor.isNew, let attachmentModel { Task { await attachmentModel.close() } }
         }
     }
 

@@ -4,6 +4,7 @@ public enum AssignmentStatus: String, Codable, CaseIterable, Identifiable, Senda
     case active, completed, abandoned
     public var id: String { rawValue }
     public var label: String { rawValue.capitalized }
+    public func canTransition(to target: Self) -> Bool { self == target || self == .active || target == .active }
 }
 
 /// The reversible fields of an action, independent from concurrent edits to task content.

@@ -10,17 +10,22 @@ struct AssignmentListView: View {
     @State private var addingAI = false
     @State private var search = ""
     @State private var actionTarget: Assignment?
+    @State private var statusDialog = false
+    @State private var projection = AssignmentListProjection()
+    @State private var pageDirection = 1
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
 
-    private var visible: [Assignment] { AssignmentQuery.apply(store.assignments, filter: filter, sort: sort, search: search) }
+    private var visible: [Assignment] { projection.rows }
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("Filter", selection: $filter) {
-                ForEach(AssignmentFilter.allCases) { Text($0.rawValue).tag($0) }
+            Group {
+                if sizeClass == .regular {
+                    categoryPicker.pickerStyle(.menu).accessibilityIdentifier("assignments.category")
+                } else { categoryPicker.pickerStyle(.segmented) }
             }
-            .pickerStyle(.segmented)
             .padding(.horizontal).padding(.vertical, 8)
             .accessibilityIdentifier("assignments.filter")
             .contentShape(Rectangle())
@@ -29,7 +34,7 @@ struct AssignmentListView: View {
               List {
                 ForEach(visible) { assignment in
                     HStack(alignment: .center, spacing: 12) {
-                        Button { actionTarget = assignment } label: {
+                        Button { actionTarget = assignment; statusDialog = true } label: {
                             Image(systemName: assignment.status == .abandoned ? "minus.circle.fill" :
                                   assignment.isCompleted ? "checkmark.circle.fill" : "circle")
                                 .font(.title2).frame(minWidth: 32, minHeight: 44)
@@ -85,24 +90,32 @@ struct AssignmentListView: View {
                 }
             }
             .id(filter)
-            .transition(.opacity)
+            .transition(.asymmetric(insertion: .move(edge: pageDirection > 0 ? .trailing : .leading).combined(with: .opacity),
+                                    removal: .move(edge: pageDirection > 0 ? .leading : .trailing).combined(with: .opacity)))
             }
+            .clipped()
         }
         .searchable(text: $search, prompt: "Search title, course or notes")
+        .onChange(of: store.assignments, initial: true) { _, values in projection.rebuild(values, sort: sort, filter: filter, search: search) }
+        .onChange(of: sort) { _, _ in projection.rebuild(store.assignments, sort: sort, filter: filter, search: search) }
+        .onChange(of: search) { _, _ in projection.refilter(filter, search: search) }
+        .onChange(of: filter) { previous, next in
+            let cases = AssignmentFilter.allCases
+            pageDirection = (cases.firstIndex(of: next) ?? 0) >= (cases.firstIndex(of: previous) ?? 0) ? 1 : -1
+            projection.refilter(filter, search: search)
+        }
         .safeAreaInset(edge: .bottom) { UndoSnackbar(coordinator: store.undo, undo: store.undoLatest) }
         .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: store.undo.latest?.id)
         .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: filter)
-        .confirmationDialog("Assignment status", isPresented: Binding(get: { actionTarget != nil },
-                              set: { if !$0 { actionTarget = nil } }), titleVisibility: .visible) {
-            if let target = actionTarget {
+        .confirmationDialog("Assignment status", isPresented: $statusDialog,
+                            titleVisibility: .visible, presenting: actionTarget) { target in
                 if target.status == .active {
                     Button("Complete") { store.setStatus(target.id, to: .completed) }
                     Button("Abandon") { store.setStatus(target.id, to: .abandoned) }
                 } else {
                     Button("Restore") { store.setStatus(target.id, to: .active) }
                 }
-                Button("Cancel", role: .cancel) { actionTarget = nil }
-            }
+                Button("Cancel", role: .cancel) {}
         }
         .navigationTitle("Assignments")
         .toolbar {
@@ -134,10 +147,16 @@ struct AssignmentListView: View {
         }
     }
 
+    private var categoryPicker: some View {
+        Picker("Category", selection: $filter) {
+            ForEach(AssignmentFilter.allCases) { Text($0.rawValue).tag($0) }
+        }
+    }
+
     // Paging belongs to the category header and empty area. Native list rows own their swipes.
     private var categorySwipe: some Gesture {
         DragGesture(minimumDistance: 28).onEnded { value in
-            guard abs(value.translation.width) > abs(value.translation.height) * 1.5,
+            guard sizeClass == .compact, abs(value.translation.width) > abs(value.translation.height) * 1.5,
                   abs(value.predictedEndTranslation.width) > 60,
                   let index = AssignmentFilter.allCases.firstIndex(of: filter) else { return }
             let next = index + (value.translation.width < 0 ? 1 : -1)
