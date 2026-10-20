@@ -7,14 +7,16 @@ final class StatusFlowTests: HomeworkUITestCase {
         let app = XCUIApplication(); app.launchArguments = ["--uitesting", "--fixture-assignments"]; app.launch()
         let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'"))
         XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 15))
-        let start = rows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        let end = rows.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.42, dy: 0.5))
+        let cell = app.cells.containing(.button, identifier: rows.firstMatch.identifier).firstMatch
+        XCTAssertTrue(cell.exists)
+        let start = cell.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        let end = cell.coordinate(withNormalizedOffset: CGVector(dx: 0.42, dy: 0.5))
         start.press(forDuration: 0.05, thenDragTo: end)
         XCTAssertEqual(rows.count, 3)
-        rows.firstMatch.swipeLeft()
+        cell.swipeLeft()
         XCTAssertTrue(app.buttons["Delete"].exists)
         XCTAssertEqual(rows.count, 3, "A trailing full swipe must never delete automatically")
-        rows.firstMatch.swipeRight()
+        cell.swipeRight()
         XCTAssertEqual(rows.count, 3)
     }
     func testAbandonUndoRestoreAndSearch() {

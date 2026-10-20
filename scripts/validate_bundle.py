@@ -22,7 +22,7 @@ def validate_app_bundle(app: Path):
         raise ValueError("Invalid WidgetKit extension declaration")
     for key in ("CFBundleShortVersionString", "CFBundleVersion"):
         if info.get(key) != widget.get(key):
-            raise ValueError("App and extension versions must agree")
+            raise ValueError(f"App and extension {key} differ: {info.get(key)!r} vs {widget.get(key)!r}")
     executable = widget.get("CFBundleExecutable", "")
     if not executable or not (extension / executable).is_file():
         raise ValueError("Embedded widget executable is missing")
