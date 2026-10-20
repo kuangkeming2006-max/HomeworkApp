@@ -20,7 +20,7 @@ final class ActivityKitClient: LiveActivityClient {
 
     func request(_ plan: LiveActivityPlan, now: Date) throws {
         let attributes = HomeworkActivityAttributes(assignmentID: plan.assignmentID)
-        let content = content(plan)
+        let content = Self.content(plan)
         if plan.start > now {
             // Verified by scripts/probe_activitykit.py against the installed Xcode 27 SDK.
             _ = try Activity.request(attributes: attributes, content: content, pushType: nil, style: .standard,
@@ -31,17 +31,17 @@ final class ActivityKitClient: LiveActivityClient {
         }
     }
 
-    func update(_ id: String, plan: LiveActivityPlan) async {
+    nonisolated func update(_ id: String, plan: LiveActivityPlan) async {
         guard let activity = Activity<HomeworkActivityAttributes>.activities.first(where: { $0.id == id }) else { return }
-        await activity.update(content(plan))
+        await activity.update(Self.content(plan))
     }
 
-    func end(_ id: String) async {
+    nonisolated func end(_ id: String) async {
         guard let activity = Activity<HomeworkActivityAttributes>.activities.first(where: { $0.id == id }) else { return }
         await activity.end(nil, dismissalPolicy: .immediate)
     }
 
-    private func content(_ plan: LiveActivityPlan) -> ActivityContent<HomeworkActivityAttributes.ContentState> {
+    private nonisolated static func content(_ plan: LiveActivityPlan) -> ActivityContent<HomeworkActivityAttributes.ContentState> {
         .init(state: .init(title: plan.title, course: plan.course, deadline: plan.deadline, start: plan.start,
                            priority: plan.priority.rawValue), staleDate: plan.deadline, relevanceScore: Double(5 - plan.priority.rawValue) / 4)
     }

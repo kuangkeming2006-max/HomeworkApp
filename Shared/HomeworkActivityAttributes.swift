@@ -1,8 +1,8 @@
 import ActivityKit
 import Foundation
 
-struct HomeworkActivityAttributes: ActivityAttributes {
-    struct ContentState: Codable, Hashable {
+struct HomeworkActivityAttributes: ActivityAttributes, Sendable {
+    struct ContentState: Codable, Hashable, Sendable {
         var title: String
         var course: String?
         var deadline: Date
