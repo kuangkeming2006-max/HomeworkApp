@@ -18,7 +18,9 @@ final class NavigationTests: XCTestCase {
         capture("Calendar")
 
         navigate("Settings", in: app)
-        XCTAssertTrue(app.staticTexts["On this device"].waitForExistence(timeout: 5))
+        let storage = app.staticTexts["settings.storage"]
+        XCTAssertTrue(storage.waitForExistence(timeout: 5))
+        XCTAssertEqual(storage.label, "Storage, On this device")
         capture("Settings")
 
         navigate("Assignments", in: app)

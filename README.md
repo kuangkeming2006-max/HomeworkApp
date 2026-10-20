@@ -12,6 +12,8 @@ Based on [hoangnd107/ios-swiftui-app-template](https://github.com/hoangnd107/ios
 4. Commit and push. The **Apple build and screenshots** workflow runs portable tests, Apple tests and an unsigned device build.
 5. Use `gh run list`, `gh run view RUN_ID --log-failed`, then `gh run download RUN_ID --dir artifacts/RUN_ID`. Inspect logs and real PNGs before claiming success.
 
+`python scripts/inspect_ci.py` shows the latest run; add `--run RUN_ID --download` after completion to save run metadata, raw Actions logs, test summary JSON and all artifacts together. It performs no retries or source changes.
+
 The workflow discovers stable Xcode 27 and available iOS 27 simulator UDIDs. Missing SDKs/runtimes cause explicit failures, with available discovery output uploaded. It never silently switches to an older toolchain.
 
 ## Outputs

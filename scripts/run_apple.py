@@ -16,11 +16,18 @@ ARTIFACTS = ROOT / "artifacts"
 APP_NAME = project_name(ROOT)
 
 
-def run(command, log, check=True, extra_env=None):
+def run(command, log, check=True, extra_env=None, timeout=900):
     print("Running " + " ".join(str(part) for part in command), flush=True)
     with (ARTIFACTS / log).open("w") as output:
-        result = subprocess.run(command, cwd=ROOT, stdout=output, stderr=subprocess.STDOUT,
-                                env={**os.environ, **(extra_env or {})})
+        try:
+            result = subprocess.run(command, cwd=ROOT, stdout=output, stderr=subprocess.STDOUT,
+                                    env={**os.environ, **(extra_env or {})}, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            output.write(f"\nCommand exceeded {timeout} seconds\n")
+            output.flush()
+            if check:
+                raise RuntimeError(f"Command timed out; inspect {log}") from None
+            return 124
     if check and result.returncode:
         print((ARTIFACTS / log).read_text(errors="replace")[-24000:], flush=True)
         raise RuntimeError(f"Command failed ({result.returncode}); inspect {log}")
@@ -30,7 +37,7 @@ def run(command, log, check=True, extra_env=None):
 def collect_diagnostics(udid=None):
     if udid:
         run(["xcrun", "simctl", "spawn", udid, "log", "show", "--last", "10m", "--style", "compact",
-             "--predicate", 'process == "HomeworkApp"'], "simulator-app.log", check=False)
+             "--predicate", 'process == "HomeworkApp"'], "simulator-app.log", check=False, timeout=90)
     crash_source = Path.home() / "Library/Logs/DiagnosticReports"
     for report in crash_source.glob("*Homework*"):
         if report.is_file():
@@ -39,8 +46,10 @@ def collect_diagnostics(udid=None):
             shutil.copy2(report, target)
     result = ARTIFACTS / "Tests.xcresult"
     if result.exists():
+        run(["xcrun", "xcresulttool", "get", "test-results", "summary", "--path", str(result)],
+            "test-summary.json", check=False, timeout=90)
         run(["xcrun", "xcresulttool", "export", "attachments", "--path", str(result),
-             "--output-path", str(ARTIFACTS / "screenshots")], "export-screenshots.log", check=False)
+             "--output-path", str(ARTIFACTS / "screenshots")], "export-screenshots.log", check=False, timeout=90)
     build_log = ARTIFACTS / "xcodebuild.log"
     if build_log.exists():
         warnings = [line for line in build_log.read_text(errors="replace").splitlines() if "warning:" in line]
@@ -60,7 +69,7 @@ def simulator(args):
         (ARTIFACTS / "device.json").write_text(json.dumps(selected, indent=2))
         udid = selected["udid"]
         run(["xcrun", "simctl", "boot", udid], "boot.log", check=False)
-        run(["xcrun", "simctl", "bootstatus", udid, "-b"], "bootstatus.log")
+        run(["xcrun", "simctl", "bootstatus", udid, "-b"], "bootstatus.log", timeout=300)
         run(["xcrun", "simctl", "ui", udid, "appearance", args.appearance], "appearance.log")
         run(["xcrun", "simctl", "status_bar", udid, "override", "--time", "9:41",
              "--batteryState", "charged", "--batteryLevel", "100"], "statusbar.log", check=False)
@@ -69,6 +78,7 @@ def simulator(args):
              "-destination", f"platform=iOS Simulator,id={udid}", "-destination-timeout", "120",
              "-derivedDataPath", "DerivedData", "-resultBundlePath", str(ARTIFACTS / "Tests.xcresult"),
              "-parallel-testing-enabled", "NO", "CODE_SIGNING_ALLOWED=NO",
+             "-test-timeouts-enabled", "YES", "-maximum-test-execution-time-allowance", "180",
              f"TEST_ORIENTATION={args.orientation}"], "xcodebuild.log", extra_env=env)
     finally:
         collect_diagnostics(udid)

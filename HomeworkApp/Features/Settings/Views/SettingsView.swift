@@ -8,6 +8,7 @@ struct SettingsView: View {
             Section("About") {
                 LabeledContent("Version", value: version)
                 LabeledContent("Storage", value: "On this device")
+                    .accessibilityIdentifier("settings.storage")
                 Text("Your coursework stays on your device. AI features will be optional.")
                     .foregroundStyle(.secondary)
             }
