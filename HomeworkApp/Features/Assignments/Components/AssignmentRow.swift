@@ -33,6 +33,16 @@ struct AssignmentRow: View {
                         .accessibilityLabel(assignment.priority.label)
                 }
                 .font(.caption)
+                if !assignment.attachments.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(Array(assignment.attachments.prefix(4))) { reference in
+                            AttachmentThumbnail(reference: reference, size: 40)
+                        }
+                        if assignment.attachments.count > 4 {
+                            Text("+\(assignment.attachments.count - 4)").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading).clipped()
+                }
             }
             .accessibilityElement(children: .combine)
     }

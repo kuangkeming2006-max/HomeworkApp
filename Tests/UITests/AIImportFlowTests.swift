@@ -1,7 +1,7 @@
 import XCTest
 
 @MainActor
-final class AIImportFlowTests: XCTestCase {
+final class AIImportFlowTests: HomeworkUITestCase {
     func testAIPreviewRequiresConfirmationAndCanSaveSelectedCandidates() {
         continueAfterFailure = false
         let app = XCUIApplication()

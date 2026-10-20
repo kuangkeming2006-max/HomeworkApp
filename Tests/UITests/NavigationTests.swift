@@ -1,7 +1,7 @@
 import XCTest
 
 @MainActor
-final class NavigationTests: XCTestCase {
+final class NavigationTests: HomeworkUITestCase {
     func testNavigationAndCaptureScreens() throws {
         continueAfterFailure = false
         let app = XCUIApplication()

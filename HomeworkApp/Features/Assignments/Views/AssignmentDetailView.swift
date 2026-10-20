@@ -4,6 +4,7 @@ import HomeworkDomain
 struct AssignmentDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var editor: AssignmentEditor
+    @State private var attachmentModel: AttachmentViewModel?
     @Environment(\.attachmentService) private var attachmentService
     private let store: AssignmentStore
 
@@ -35,6 +36,12 @@ struct AssignmentDetailView: View {
             }
             Section("Notes") {
                 TextEditor(text: optionalBinding(\.notes)).frame(minHeight: 120)
+                    .overlay(alignment: .topLeading) {
+                        if editor.draft.notes?.isEmpty != false {
+                            Text("Add notes or instructions…").foregroundStyle(.tertiary)
+                                .padding(.top, 8).padding(.leading, 5).allowsHitTesting(false)
+                        }
+                    }
                     .accessibilityLabel("Notes").accessibilityIdentifier("editor.notes")
             }
             Section("Reminder") {
@@ -42,10 +49,8 @@ struct AssignmentDetailView: View {
                 Text("Enable notifications in Settings. A reminder time that has already passed will be skipped.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            if editor.isNew {
-                Section("Attachments") { Text("Create the assignment to add photos and files.").foregroundStyle(.secondary) }
-            } else if let attachmentService {
-                AttachmentList(assignmentID: editor.draft.id, store: store, service: attachmentService)
+            if let attachmentModel {
+                AttachmentList(model: attachmentModel)
             } else {
                 Section("Attachments") { Text("Attachment storage is currently unavailable.").foregroundStyle(.secondary) }
             }
@@ -70,12 +75,28 @@ struct AssignmentDetailView: View {
             if editor.isNew {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") { if editor.create() { dismiss() } }
-                        .disabled(!editor.canSave).accessibilityIdentifier("editor.save")
+                    Button("Create") {
+                        if editor.create() { attachmentModel?.markCommitted(); dismiss() }
+                    }
+                        .disabled(!editor.canSave || attachmentModel?.busy == true).accessibilityIdentifier("editor.save")
                 }
             }
         }
-        .onDisappear { editor.flush() }
+        .interactiveDismissDisabled(attachmentModel?.busy == true)
+        .task {
+            guard attachmentModel == nil, let attachmentService else { return }
+            if editor.isNew {
+                attachmentModel = AttachmentViewModel(service: attachmentService) { references in
+                    editor.set(\.attachments, references)
+                }
+            } else {
+                attachmentModel = AttachmentViewModel(assignmentID: editor.draft.id, store: store, service: attachmentService)
+            }
+        }
+        .onDisappear {
+            editor.flush()
+            if let attachmentModel { Task { await attachmentModel.close() } }
+        }
     }
 
     private func binding<Value>(_ path: WritableKeyPath<Assignment, Value>) -> Binding<Value> {

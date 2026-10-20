@@ -1,7 +1,7 @@
 import XCTest
 
 @MainActor
-final class AssignmentFlowTests: XCTestCase {
+final class AssignmentFlowTests: HomeworkUITestCase {
     func testCreateCompleteRestoreAndCalendarNavigation() {
         continueAfterFailure = false
         let app = XCUIApplication()

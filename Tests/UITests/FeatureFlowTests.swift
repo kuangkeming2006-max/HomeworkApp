@@ -1,7 +1,7 @@
 import XCTest
 
 @MainActor
-final class FeatureFlowTests: XCTestCase {
+final class FeatureFlowTests: HomeworkUITestCase {
     func testPriorityAndDeadlineSortingAndDeletion() {
         continueAfterFailure = false
         let app = XCUIApplication()

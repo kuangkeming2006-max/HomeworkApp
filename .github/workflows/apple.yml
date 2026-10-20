@@ -4,12 +4,43 @@ on:
     branches: ["**"] # Version tags use the shared device build in release.yml.
   pull_request:
   workflow_dispatch:
+    inputs:
+      coverage:
+        description: Simulator coverage
+        type: choice
+        options: [full, focused]
+        default: full
 permissions:
   contents: read
 concurrency:
-  group: apple-${{ github.ref }}
+  group: apple-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
+    steps:
+      - id: matrix
+        env:
+          COVERAGE: ${{ inputs.coverage }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          configurations = [
+              dict(family="phone", appearance="light", orientation="portrait"),
+              dict(family="pad", appearance="light", orientation="landscape"),
+          ]
+          if os.environ.get("COVERAGE") != "focused":
+              configurations += [
+                  dict(family="phone", appearance="dark", orientation="portrait"),
+                  dict(family="pad", appearance="light", orientation="portrait"),
+                  dict(family="pad", appearance="dark", orientation="portrait"),
+                  dict(family="pad", appearance="dark", orientation="landscape"),
+              ]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("value=" + json.dumps({"include": configurations}) + "\n")
+          PY
   tooling:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -40,19 +71,13 @@ jobs:
           path: artifacts/
           retention-days: 14
   simulator:
+    needs: plan
     runs-on: xcode-27
     timeout-minutes: 40
     strategy:
       fail-fast: false
       max-parallel: 4
-      matrix:
-        include:
-          - {family: phone, appearance: light, orientation: portrait}
-          - {family: phone, appearance: dark, orientation: portrait}
-          - {family: pad, appearance: light, orientation: portrait}
-          - {family: pad, appearance: dark, orientation: portrait}
-          - {family: pad, appearance: light, orientation: landscape}
-          - {family: pad, appearance: dark, orientation: landscape}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       XCODE_VERSION: latest-27
     steps:
