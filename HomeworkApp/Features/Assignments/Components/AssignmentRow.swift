@@ -3,22 +3,24 @@ import HomeworkDomain
 
 struct AssignmentRow: View {
     let assignment: Assignment
+    var now: Date = .now
 
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 60)) { context in
-            let overdue = !assignment.isCompleted && assignment.dueDate < context.date
+            let overdue = assignment.status == .active && assignment.dueDate < now
             VStack(alignment: .leading, spacing: 5) {
                 Text(assignment.title).font(.body.weight(.semibold))
+                    .lineLimit(2)
                     .foregroundStyle(.primary)
                     .strikethrough(assignment.isCompleted)
                 if let course = assignment.course, !course.isEmpty {
                     Text(course).font(.subheadline).foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 HStack(spacing: 8) {
                     Text(assignment.dueDate, format: .dateTime.month(.abbreviated).day().hour().minute())
                         .foregroundColor(overdue ? .red : .secondary)
                     if overdue { Text("Overdue").foregroundStyle(.red) }
-                    else if !assignment.isCompleted, assignment.dueDate.timeIntervalSince(context.date) < 86_400 {
+                    else if assignment.status == .active, assignment.dueDate.timeIntervalSince(now) < 86_400 {
                         Text("Due soon").foregroundStyle(.orange)
                     }
                     Spacer(minLength: 0)
@@ -33,6 +35,5 @@ struct AssignmentRow: View {
                 .font(.caption)
             }
             .accessibilityElement(children: .combine)
-        }
     }
 }

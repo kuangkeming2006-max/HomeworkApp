@@ -18,7 +18,7 @@ public struct ReminderPlan: Sendable {
     public init(assignments: [Assignment], now: Date, capacity: Int = 60) {
         var candidates: [PlannedReminder] = []
         var past = 0
-        for assignment in assignments where !assignment.isCompleted && assignment.deletedAt == nil {
+        for assignment in assignments where assignment.status == .active && assignment.deletedAt == nil {
             guard (try? assignment.validate()) != nil,
                   let zone = TimeZone(identifier: assignment.dueTimeZone),
                   let fire = assignment.reminder.fireDate(dueDate: assignment.dueDate, timeZone: zone) else { continue }

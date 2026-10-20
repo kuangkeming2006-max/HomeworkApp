@@ -14,7 +14,7 @@ final class SwiftDataAssignmentRepository: AssignmentRepository {
     }
 
     static func makeContainer(inMemory: Bool = false, url: URL? = nil) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: HomeworkSchemaV1.self)
+        let schema = Schema(versionedSchema: HomeworkSchemaV2.self)
         let configuration: ModelConfiguration
         if let url {
             configuration = ModelConfiguration("Homework", schema: schema, url: url, cloudKitDatabase: .none)
@@ -33,17 +33,17 @@ final class SwiftDataAssignmentRepository: AssignmentRepository {
     func save(_ assignments: [Assignment]) throws {
         for assignment in assignments { try assignment.validate() }
         do {
-            let existing = try context.fetch(FetchDescriptor<AssignmentEntity>())
-            var byID = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
             for assignment in assignments {
+                let id = assignment.id
+                var query = FetchDescriptor<AssignmentEntity>(predicate: #Predicate { $0.id == id })
+                query.fetchLimit = 1
                 let entity: AssignmentEntity
-                if let saved = byID[assignment.id] {
+                if let saved = try context.fetch(query).first {
                     entity = saved
                 } else {
                     entity = AssignmentEntity(id: assignment.id, title: assignment.title,
                                               dueDate: assignment.dueDate, now: assignment.createdAt)
                     context.insert(entity)
-                    byID[assignment.id] = entity
                 }
                 try entity.apply(assignment)
             }
@@ -64,7 +64,10 @@ private extension AssignmentEntity {
         var value = Assignment(id: id, title: title, course: course, notes: notes, dueDate: dueDate,
                                dueTimeZone: dueTimeZone, priority: priority,
                                reminder: .init(amount: reminderAmount, unit: unit), now: createdAt)
-        value.isCompleted = isCompleted; value.completedAt = completedAt
+        guard let status = statusRaw.flatMap(AssignmentStatus.init(rawValue:)) else {
+            throw AssignmentError.invalid("A saved assignment uses an unsupported status.")
+        }
+        value.status = status; value.completedAt = completedAt; value.abandonedAt = abandonedAt
         value.attachments = try JSONDecoder().decode([AttachmentReference].self, from: attachmentsData)
         value.updatedAt = updatedAt; value.deletedAt = deletedAt; value.localRevision = localRevision
         try value.validate()
@@ -76,6 +79,7 @@ private extension AssignmentEntity {
         dueDate = value.dueDate; dueTimeZone = value.dueTimeZone
         priorityRaw = value.priority.rawValue
         isCompleted = value.isCompleted; completedAt = value.completedAt
+        statusRaw = value.status.rawValue; abandonedAt = value.abandonedAt
         reminderAmount = value.reminder.amount; reminderUnit = value.reminder.unit.rawValue
         attachmentsData = try JSONEncoder().encode(value.attachments)
         createdAt = value.createdAt; updatedAt = value.updatedAt

@@ -8,8 +8,14 @@ public struct Assignment: Codable, Equatable, Identifiable, Sendable {
     public var dueDate: Date
     public var dueTimeZone: String
     public var priority: Priority
-    public var isCompleted: Bool
+    public var status: AssignmentStatus
+    /// Compatibility for version-one clients and backups. Status is the source of truth.
+    public var isCompleted: Bool {
+        get { status == .completed }
+        set { status = newValue ? .completed : .active }
+    }
     public var completedAt: Date?
+    public var abandonedAt: Date?
     public var reminder: ReminderConfiguration
     public var attachments: [AttachmentReference]
     public var createdAt: Date
@@ -29,8 +35,9 @@ public struct Assignment: Codable, Equatable, Identifiable, Sendable {
         self.dueTimeZone = dueTimeZone
         self.priority = priority
         self.reminder = reminder
-        self.isCompleted = false
+        self.status = .active
         self.completedAt = nil
+        self.abandonedAt = nil
         self.attachments = []
         self.createdAt = now
         self.updatedAt = now
@@ -48,17 +55,66 @@ public struct Assignment: Codable, Equatable, Identifiable, Sendable {
         guard dueDate.timeIntervalSince1970.isFinite, TimeZone(identifier: dueTimeZone) != nil else {
             throw AssignmentError.invalid("Choose a valid deadline and time zone.")
         }
-        guard isCompleted == (completedAt != nil), localRevision > 0 else {
+        guard isCompleted == (completedAt != nil), (status == .abandoned) == (abandonedAt != nil), localRevision > 0 else {
             throw AssignmentError.invalid("The assignment has inconsistent completion information.")
         }
         guard createdAt.timeIntervalSince1970.isFinite, updatedAt.timeIntervalSince1970.isFinite,
               updatedAt >= createdAt, completedAt.map({ $0.timeIntervalSince1970.isFinite }) ?? true,
+              abandonedAt.map({ $0.timeIntervalSince1970.isFinite }) ?? true,
               deletedAt.map({ $0.timeIntervalSince1970.isFinite }) ?? true,
               attachments.count <= 100, Set(attachments.map(\.id)).count == attachments.count else {
             throw AssignmentError.invalid("The assignment has invalid timestamps or attachment information.")
         }
         for attachment in attachments { try attachment.validate() }
         try reminder.validate()
+    }
+
+    public mutating func transition(to target: AssignmentStatus, at date: Date) {
+        status = target
+        completedAt = target == .completed ? max(date, createdAt) : nil
+        abandonedAt = target == .abandoned ? max(date, createdAt) : nil
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, title, course, notes, dueDate, dueTimeZone, priority, status, isCompleted, completedAt,
+             abandonedAt, reminder, attachments, createdAt, updatedAt, deletedAt, localRevision
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        title = try c.decode(String.self, forKey: .title)
+        course = try c.decodeIfPresent(String.self, forKey: .course)
+        notes = try c.decodeIfPresent(String.self, forKey: .notes)
+        dueDate = try c.decode(Date.self, forKey: .dueDate)
+        dueTimeZone = try c.decode(String.self, forKey: .dueTimeZone)
+        priority = try c.decode(Priority.self, forKey: .priority)
+        let legacyCompleted = try c.decode(Bool.self, forKey: .isCompleted)
+        status = try c.decodeIfPresent(AssignmentStatus.self, forKey: .status) ?? (legacyCompleted ? .completed : .active)
+        guard legacyCompleted == (status == .completed) else {
+            throw DecodingError.dataCorruptedError(forKey: .status, in: c, debugDescription: "Inconsistent assignment status.")
+        }
+        completedAt = try c.decodeIfPresent(Date.self, forKey: .completedAt)
+        abandonedAt = try c.decodeIfPresent(Date.self, forKey: .abandonedAt)
+        reminder = try c.decode(ReminderConfiguration.self, forKey: .reminder)
+        attachments = try c.decode([AttachmentReference].self, forKey: .attachments)
+        createdAt = try c.decode(Date.self, forKey: .createdAt)
+        updatedAt = try c.decode(Date.self, forKey: .updatedAt)
+        deletedAt = try c.decodeIfPresent(Date.self, forKey: .deletedAt)
+        localRevision = try c.decode(Int.self, forKey: .localRevision)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id); try c.encode(title, forKey: .title)
+        try c.encodeIfPresent(course, forKey: .course); try c.encodeIfPresent(notes, forKey: .notes)
+        try c.encode(dueDate, forKey: .dueDate); try c.encode(dueTimeZone, forKey: .dueTimeZone)
+        try c.encode(priority, forKey: .priority); try c.encode(status, forKey: .status)
+        try c.encode(isCompleted, forKey: .isCompleted); try c.encodeIfPresent(completedAt, forKey: .completedAt)
+        try c.encodeIfPresent(abandonedAt, forKey: .abandonedAt); try c.encode(reminder, forKey: .reminder)
+        try c.encode(attachments, forKey: .attachments); try c.encode(createdAt, forKey: .createdAt)
+        try c.encode(updatedAt, forKey: .updatedAt); try c.encodeIfPresent(deletedAt, forKey: .deletedAt)
+        try c.encode(localRevision, forKey: .localRevision)
     }
 }
 

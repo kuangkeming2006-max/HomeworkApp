@@ -31,8 +31,14 @@ final class AssignmentEditor {
     }
 
     func setCompleted(_ completed: Bool) {
-        set(\.isCompleted, completed)
-        set(\.completedAt, completed ? max(Date(), draft.createdAt) : nil)
+        setStatus(completed ? .completed : .active)
+    }
+
+    func setStatus(_ status: AssignmentStatus) {
+        let date = Date()
+        set(\.status, status)
+        set(\.completedAt, status == .completed ? max(date, draft.createdAt) : nil)
+        set(\.abandonedAt, status == .abandoned ? max(date, draft.createdAt) : nil)
     }
 
     @discardableResult

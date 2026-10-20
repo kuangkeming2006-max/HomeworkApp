@@ -18,9 +18,11 @@ final class AssignmentFlowTests: XCTestCase {
         XCTAssertTrue(row.label.contains("Networking lab report"))
         let completion = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.complete.'")).firstMatch
         completion.tap()
+        app.buttons["Complete"].tap()
         app.segmentedControls.buttons["Completed"].tap()
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         completion.tap()
+        app.buttons["Restore"].tap()
         app.segmentedControls.buttons["Upcoming"].tap()
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         row.tap()

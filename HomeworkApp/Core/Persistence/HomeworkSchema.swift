@@ -35,9 +35,3 @@ enum HomeworkSchemaV1: VersionedSchema {
     }
 }
 
-enum HomeworkMigrationPlan: SchemaMigrationPlan {
-    static var schemas: [any VersionedSchema.Type] { [HomeworkSchemaV1.self] }
-    static var stages: [MigrationStage] { [] }
-}
-
-typealias AssignmentEntity = HomeworkSchemaV1.AssignmentEntity

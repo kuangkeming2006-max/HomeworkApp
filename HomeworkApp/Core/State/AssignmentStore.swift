@@ -9,6 +9,7 @@ final class AssignmentStore {
     private let repository: any AssignmentRepository
     var didChange: (@MainActor () -> Void)?
     var defaultReminder: ReminderConfiguration = .none
+    let undo = UndoCoordinator()
 
     init(repository: any AssignmentRepository) throws {
         self.repository = repository
@@ -28,7 +29,9 @@ final class AssignmentStore {
 
     func save(_ values: [Assignment]) throws {
         try repository.save(values)
-        assignments = try repository.fetchAll()
+        let changes = Dictionary(uniqueKeysWithValues: values.map { ($0.id, $0) })
+        let existing = Set(assignments.map(\.id))
+        assignments = assignments.map { changes[$0.id] ?? $0 } + values.filter { !existing.contains($0.id) }
         didChange?()
     }
 
@@ -41,16 +44,38 @@ final class AssignmentStore {
     }
 
     func toggleCompletion(_ id: UUID) {
-        perform {
-            try update(id) {
-                $0.isCompleted.toggle()
-                $0.completedAt = $0.isCompleted ? max(Date(), $0.createdAt) : nil
-            }
+        guard let value = assignment(id) else { return }
+        setStatus(id, to: value.status == .active ? .completed : .active)
+    }
+
+    func setStatus(_ id: UUID, to status: AssignmentStatus) {
+        action(id, message: status == .active ? "Assignment restored" : "Assignment \(status.rawValue)") {
+            $0.transition(to: status, at: Date())
         }
     }
 
     func delete(_ id: UUID) {
-        perform { try update(id) { $0.deletedAt = max(Date(), $0.updatedAt) } }
+        action(id, message: "Assignment deleted") { $0.deletedAt = max(Date(), $0.updatedAt) }
+    }
+
+    private func action(_ id: UUID, message: String, change: (inout Assignment) -> Void) {
+        guard let before = assignment(id) else { return }
+        perform {
+            try update(id, change: change)
+            guard let after = assignments.first(where: { $0.id == id }) else { return }
+            undo.record(id: id, before: AssignmentDisposition(before), after: AssignmentDisposition(after), message: message)
+        }
+    }
+
+    func undoLatest() {
+        guard let action = undo.takeLatest(),
+              var current = assignments.first(where: { $0.id == action.assignmentID }) else { return }
+        // Content edits in another window survive; newer disposition changes are never overwritten.
+        guard AssignmentDisposition(current) == action.after else { return }
+        action.before.apply(to: &current)
+        current.updatedAt = max(Date(), current.updatedAt.addingTimeInterval(0.001))
+        current.localRevision += 1
+        perform { try save([current]) }
     }
 
     func perform(_ work: () throws -> Void) {
