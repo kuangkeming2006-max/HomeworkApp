@@ -23,6 +23,7 @@ struct CalendarView: View {
                     Button { selectingMonth = true } label: {
                         HStack(spacing: 5) {
                             Text(model.month, format: .dateTime.month(.wide).year()).font(.title3.bold())
+                                .lineLimit(2).multilineTextAlignment(.center)
                             Image(systemName: "chevron.down").font(.caption)
                         }
                     }.buttonStyle(.plain).accessibilityIdentifier("calendar.month")
@@ -32,7 +33,7 @@ struct CalendarView: View {
                 }
                 LazyVGrid(columns: columns, spacing: 8) {
                     ForEach(Array(model.weekdaySymbols.enumerated()), id: \.offset) { _, symbol in
-                        Text(symbol).font(.caption).foregroundStyle(.secondary)
+                        Text(symbol).font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.5)
                     }
                     ForEach(Array(model.grid.days.enumerated()), id: \.offset) { _, day in
                         if let day { dayButton(day) }
@@ -118,7 +119,7 @@ struct CalendarView: View {
         return Button { model.selectedDate = day } label: {
             VStack(spacing: 4) {
                 Text("\(model.calendar.component(.day, from: day))")
-                    .fontWeight(selected ? .bold : .regular).monospacedDigit()
+                    .fontWeight(selected ? .bold : .regular).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
                 HStack(spacing: 3) {
                     ForEach(summary.dots) { classification in
                         Circle().fill(classification.color).frame(width: 5, height: 5)

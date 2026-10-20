@@ -1,6 +1,5 @@
 import SwiftUI
 import PhotosUI
-import QuickLook
 import UniformTypeIdentifiers
 import HomeworkDomain
 
@@ -56,6 +55,5 @@ struct AttachmentList: View {
             Task { await model.importFiles(result) }
         }
         .onChange(of: photos) { _, items in Task { await model.importPhotos(items); photos = [] } }
-        .quickLookPreview($model.previewURL)
     }
 }

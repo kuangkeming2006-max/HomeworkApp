@@ -1,4 +1,5 @@
 import SwiftUI
+import QuickLook
 import HomeworkDomain
 
 struct AssignmentDetailView: View {
@@ -89,6 +90,8 @@ struct AssignmentDetailView: View {
             }
         }
         .interactiveDismissDisabled(closing || attachmentModel?.busy == true)
+        // Presentation belongs to the stable Form, not its virtualized Section cells.
+        .quickLookPreview(Binding(get: { attachmentModel?.previewURL }, set: { attachmentModel?.previewURL = $0 }))
         .task {
             guard attachmentModel == nil, let attachmentService else { return }
             if editor.isNew {

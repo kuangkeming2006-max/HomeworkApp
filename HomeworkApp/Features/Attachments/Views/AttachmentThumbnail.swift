@@ -12,7 +12,7 @@ struct AttachmentThumbnail: View {
         Group {
             if let image { Image(uiImage: image).resizable().scaledToFill() }
             else { Image(systemName: UTType(reference.contentType)?.conforms(to: .image) == true ? "photo" : "doc.text")
-                .font(.title3).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
+                .font(.system(size: size * 0.5)).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.quaternary) }
         }
         .frame(width: size, height: size).clipped().clipShape(RoundedRectangle(cornerRadius: 8))

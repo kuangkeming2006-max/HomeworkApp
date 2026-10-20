@@ -10,10 +10,11 @@ struct AssignmentWorkspace: View {
     var request: AssignmentNavigationRequest? = nil
     @State private var selectedID: UUID?
     @State private var path: [UUID] = []
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         GeometryReader { geometry in
-            if geometry.size.width >= 720 {
+            if geometry.size.width >= 720 && !typeSize.isAccessibilitySize {
                 HStack(spacing: 0) {
                     NavigationStack {
                         AssignmentListView(store: store) { selectedID = $0; path = [$0] }

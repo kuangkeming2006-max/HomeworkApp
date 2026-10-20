@@ -26,6 +26,18 @@ final class PerformanceLayoutTests: HomeworkUITestCase {
         row.tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "editor.title").firstMatch.waitForExistence(timeout: 5))
         capture(app, "Large editor")
+        navigate("Briefing", app: app)
+        XCTAssertTrue(app.buttons["briefing.next"].waitForExistence(timeout: 5))
+        capture(app, "Large Briefing")
+        navigate("Calendar", app: app)
+        XCTAssertTrue(app.buttons["calendar.today"].waitForExistence(timeout: 5))
+        capture(app, "Large calendar")
+    }
+
+    private func navigate(_ title: String, app: XCUIApplication) {
+        if app.tabBars.buttons[title].exists { app.tabBars.buttons[title].tap(); return }
+        if !app.staticTexts[title].firstMatch.exists, app.buttons["Show Sidebar"].exists { app.buttons["Show Sidebar"].tap() }
+        XCTAssertTrue(app.staticTexts[title].firstMatch.waitForExistence(timeout: 5)); app.staticTexts[title].firstMatch.tap()
     }
 
     private func capture(_ app: XCUIApplication, _ name: String) {
