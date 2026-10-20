@@ -8,6 +8,8 @@ final class NavigationTests: XCTestCase {
         app.launchArguments = ["--uitesting"]
         let environment = ProcessInfo.processInfo.environment
         let orientation = environment["TEST_ORIENTATION"] ?? "portrait"
+        XCTAssertTrue(["portrait", "landscape"].contains(orientation),
+                      "The scheme must expand TEST_ORIENTATION; received '\(orientation)'")
         XCUIDevice.shared.orientation = orientation == "landscape" ? .landscapeLeft : .portrait
         app.launch()
         XCTAssertTrue(app.staticTexts["No assignments yet"].waitForExistence(timeout: 15))

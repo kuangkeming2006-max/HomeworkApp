@@ -4,7 +4,7 @@
 
 Implemented locally: template integration, modular minimal app, adaptive navigation, domain package, XcodeGen specification, Linux/domain tests, hosted Apple integration/UI tests, six screenshot configurations, unsigned device packaging and draft release workflow.
 
-Verification: pending first GitHub Actions run. Local Python tooling tests pass. No Swift compiler is installed on this Windows host; no Apple compilation, simulator run, screenshot review or device installation is claimed yet.
+Verification in progress: nine Windows/Linux build-tool tests and the portable Swift test pass. The real Xcode 27/iOS 27 arm64 device build succeeds, with iOS 26 deployment and both device families confirmed from the built Info.plist. Run `39380747774` passed hosted integration and UI navigation tests in all six configurations. The four portrait jobs also passed PNG validation; their actual screenshots were reviewed. The two landscape jobs correctly failed the independent pixel-orientation check: scheme environment macros had no expansion target. This is being fixed in `project.yml`, with an explicit test assertion rejecting unresolved parameters. Phase 1 remains incomplete until real landscape PNGs pass inspection. Physical-device installation is unverified.
 
 ## Required next gates
 

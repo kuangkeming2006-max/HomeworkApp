@@ -24,6 +24,7 @@ settings:
     CODE_SIGN_IDENTITY: ""
     ENABLE_USER_SCRIPT_SANDBOXING: YES
     ALWAYS_SEARCH_USER_PATHS: NO
+    TEST_ORIENTATION: portrait
 targets:
   HomeworkApp:
     type: application
@@ -78,6 +79,7 @@ schemes:
         HomeworkAppUITests: [test]
     test:
       gatherCoverageData: true
+      macroExpansion: HomeworkApp
       environmentVariables:
         TEST_ORIENTATION: $(TEST_ORIENTATION)
       targets:
