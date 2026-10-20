@@ -1,0 +1,22 @@
+name: SDK capability probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: xcode-27
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/select_xcode.py
+      - name: Inspect installed ActivityKit declarations and typecheck scheduling
+        run: python3 scripts/probe_activitykit.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: sdk-capabilities
+          path: artifacts/
+          retention-days: 14
