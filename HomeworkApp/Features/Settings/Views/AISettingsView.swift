@@ -1,11 +1,12 @@
 import SwiftUI
+import HomeworkDomain
 
 struct AISettingsView: View {
     @State private var model: AISettingsViewModel
 
-    init(container: AppContainer) {
-        _model = State(initialValue: AISettingsViewModel(preferences: container.preferences,
-            secrets: container.secrets, buildProvider: container.providerBuilder))
+    init(preferences: AppPreferences, secrets: any SecretStore, buildProvider: @escaping LLMProviderBuilder) {
+        _model = State(initialValue: AISettingsViewModel(preferences: preferences,
+            secrets: secrets, buildProvider: buildProvider))
     }
 
     var body: some View {

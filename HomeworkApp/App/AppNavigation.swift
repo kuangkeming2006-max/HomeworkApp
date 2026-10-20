@@ -82,7 +82,11 @@ struct AppNavigation: View {
         switch section {
         case .assignments: AssignmentWorkspace(store: store)
         case .calendar: NavigationStack { CalendarView(store: store) }
-        case .settings: NavigationStack { SettingsView(container: container) }
+        case .settings: NavigationStack {
+            SettingsView(version: container.version, preferences: container.preferences,
+                         notifications: container.notifications, store: store, backupService: container.backupService,
+                         secrets: container.secrets, buildProvider: container.providerBuilder)
+        }
         }
     }
 }

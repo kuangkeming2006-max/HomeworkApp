@@ -7,6 +7,7 @@
 | `App` | App lifecycle, adaptive navigation, dependency composition | 1 |
 | `Packages/HomeworkDomain` | Sendable value types, sorting, validation, calendar/reminder/AI policies, repository and service protocols | 1–4 |
 | `Core/Persistence` | Versioned SwiftData models, migration plan, domain mapping | 2 |
+| `Core/State` | Shared observable assignment state used by multiple features | 2 |
 | `Features/Assignments` | List/detail presentation, editing and filtering | 2 |
 | `Features/Calendar` | Interactive month grid and selection | 2 |
 | `Services/AssignmentRepository` | SwiftData repository implementing the domain boundary | 2 |
