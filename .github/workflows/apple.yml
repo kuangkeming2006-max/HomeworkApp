@@ -63,7 +63,7 @@ jobs:
       - name: Install verified project generator
         run: python3 scripts/install_xcodegen.py
       - name: Generate Xcode project
-        run: .tools/xcodegen generate
+        run: .tools/bin/xcodegen generate
       - name: Resolve local packages
         run: xcodebuild -resolvePackageDependencies -project HomeworkApp.xcodeproj -scheme HomeworkApp > artifacts/resolve.log 2>&1
       - name: Test on discovered simulator and export screenshots

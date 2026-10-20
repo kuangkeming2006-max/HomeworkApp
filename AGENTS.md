@@ -18,7 +18,7 @@
 ## Development gates
 - Follow `docs/STATUS.md`. Phase 1 must have a real successful device build, simulator launch, tests and screenshots before Phase 2. A configured workflow is not verified CI.
 - Commit each phase independently after relevant checks pass. Fix real logs and actual screenshots; never remove tests or weaken assertions to get a pass.
-- The canonical project source is `project.yml`. Run `python3 scripts/install_xcodegen.py` and `.tools/xcodegen generate`; do not hand-edit generated projects.
+- The canonical project source is `project.yml`. Run `python3 scripts/install_xcodegen.py` and `.tools/bin/xcodegen generate`; do not hand-edit generated projects. Preserve XcodeGen's adjacent `share` settings resources when installing.
 - Run `python -m unittest discover -s scripts/tests -v` for CI tooling and `swift test --package-path Packages/HomeworkDomain` for domain changes.
 - Apple validation is `.github/workflows/apple.yml`. It inventories Xcode/SDKs/simulators, selects real destinations and retains diagnostics on failure.
 - Use synthetic launch fixtures for UI tests. Stable accessibility identifiers belong on major controls. Never call a real LLM in CI.

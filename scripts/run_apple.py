@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import struct
 import zipfile
 
 from simulators import select_device
@@ -69,12 +70,22 @@ def simulator(args):
              "-derivedDataPath", "DerivedData", "-resultBundlePath", str(ARTIFACTS / "Tests.xcresult"),
              "-parallel-testing-enabled", "NO", "CODE_SIGNING_ALLOWED=NO",
              f"TEST_ORIENTATION={args.orientation}"], "xcodebuild.log", extra_env=env)
-        screenshots = ARTIFACTS / "screenshots"
-        collect_diagnostics(udid)
-        if not list(screenshots.rglob("*.png")):
-            raise RuntimeError("Tests finished without exported PNG screenshots")
     finally:
         collect_diagnostics(udid)
+    screenshots = sorted((ARTIFACTS / "screenshots").rglob("*.png"))
+    if len(screenshots) < 3:
+        raise RuntimeError("Expected PNG screenshots for all three primary pages")
+    metadata = []
+    for screenshot in screenshots:
+        with screenshot.open("rb") as source:
+            header = source.read(24)
+        if header[:8] != b"\x89PNG\r\n\x1a\n":
+            raise RuntimeError("Exported screenshot has an invalid PNG header")
+        width, height = struct.unpack(">II", header[16:24])
+        if (width > height) != (args.orientation == "landscape"):
+            raise RuntimeError(f"Screenshot orientation does not match requested {args.orientation}")
+        metadata.append({"file": str(screenshot.relative_to(ARTIFACTS)), "width": width, "height": height})
+    (ARTIFACTS / "screenshots.json").write_text(json.dumps(metadata, indent=2))
 
 
 def device_build():

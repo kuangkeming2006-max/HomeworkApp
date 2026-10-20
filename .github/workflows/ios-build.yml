@@ -17,7 +17,7 @@ jobs:
           persist-credentials: false
       - run: python3 scripts/select_xcode.py
       - run: python3 scripts/install_xcodegen.py
-      - run: .tools/xcodegen generate
+      - run: .tools/bin/xcodegen generate
       - name: Build unsigned iPhoneOS app and package Payload IPA
         run: python3 scripts/run_apple.py device
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
