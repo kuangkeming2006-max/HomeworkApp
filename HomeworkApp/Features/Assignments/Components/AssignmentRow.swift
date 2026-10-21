@@ -4,12 +4,40 @@ import HomeworkDomain
 struct AssignmentRow: View {
     let assignment: Assignment
     var now: Date = .now
+    var onOpen: (() -> Void)? = nil
+    var onPreview: ((AttachmentReference) -> Void)? = nil
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
             let classification = DeadlineClassification.classify(assignment, now: now)
             let overdue = classification == .overdue
             VStack(alignment: .leading, spacing: 5) {
+                if let onOpen {
+                    Button(action: onOpen) { metadata(classification: classification, overdue: overdue) }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("assignment.open.\(assignment.id)")
+                } else { metadata(classification: classification, overdue: overdue) }
+                if !assignment.attachments.isEmpty {
+                    HStack(spacing: 6) {
+                        ForEach(Array(assignment.attachments.prefix(4))) { reference in
+                            Button { onPreview?(reference) } label: {
+                                AttachmentThumbnail(reference: reference, size: 44)
+                            }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel("Open attachment")
+                            .accessibilityIdentifier("attachment.thumbnail.\(reference.id)")
+                        }
+                        if assignment.attachments.count > 4 {
+                            Text("+\(assignment.attachments.count - 4)").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading).clipped()
+                }
+            }
+            .accessibilityElement(children: .contain)
+    }
+
+    private func metadata(classification: DeadlineClassification, overdue: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
                 Text(assignment.title).font(.body.weight(.semibold))
                     .lineLimit(2)
                     .foregroundStyle(.primary)
@@ -39,17 +67,8 @@ struct AssignmentRow: View {
                         }
                     }
                 }.font(.caption)
-                if !assignment.attachments.isEmpty {
-                    HStack(spacing: 6) {
-                        ForEach(Array(assignment.attachments.prefix(4))) { reference in
-                            AttachmentThumbnail(reference: reference, size: 40)
-                        }
-                        if assignment.attachments.count > 4 {
-                            Text("+\(assignment.attachments.count - 4)").font(.caption).foregroundStyle(.secondary)
-                        }
-                    }.frame(maxWidth: .infinity, alignment: .leading).clipped()
-                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading).contentShape(Rectangle())
             .accessibilityElement(children: .combine)
     }
 

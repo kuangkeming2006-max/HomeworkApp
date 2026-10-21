@@ -47,6 +47,9 @@ struct AppNavigation: View {
             }
         }
         .environment(\.locale, Locale(identifier: "en_US"))
+        .tint(container.preferences.accent.color)
+        .environment(\.appAccent, container.preferences.accent.color)
+        .preferredColorScheme(container.preferences.appearance.colorScheme)
         .environment(\.dynamicTypeSize, effectiveTypeSize)
         .environment(\.attachmentService, container.attachmentService)
         .environment(\.llmProviderFactory, { [container] in try container.makeLLMProvider() })
@@ -95,18 +98,67 @@ struct AppNavigation: View {
             } detail: {
                 destination(selection ?? .assignments, store: store)
             }
+            .safeAreaInset(edge: .bottom) { snackbar(store) }
         } else {
-            TabView(selection: $selection) {
+            ZStack {
                 ForEach(AppSection.allCases) { section in
-                    Tab(value: Optional(section)) {
-                        destination(section, store: store)
-                    } label: {
-                        Label(section.rawValue, systemImage: section.symbol)
-                            .accessibilityIdentifier(section.identifier)
-                    }
+                    destination(section, store: store)
+                        .opacity(selection == section ? 1 : 0)
+                        .offset(y: reduceMotion || selection == section ? 0 : 10)
+                        .allowsHitTesting(selection == section)
+                        .accessibilityHidden(selection != section)
+                        .zIndex(selection == section ? 1 : 0)
+                }
+            }
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.24), value: selection)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                VStack(spacing: 6) {
+                    snackbar(store)
+                    equalWidthTabBar
                 }
             }
         }
+    }
+
+    private var equalWidthTabBar: some View {
+        HStack(spacing: 0) {
+            ForEach(AppSection.allCases) { section in
+                Button {
+                    guard selection != section else { return }
+                    AppHaptics.selection()
+                    selection = section
+                } label: {
+                    VStack(spacing: 4) {
+                        Image(systemName: section.symbol).font(.system(size: 21, weight: .semibold))
+                        Text(section.rawValue).font(.caption2.weight(.semibold))
+                            .lineLimit(1).minimumScaleFactor(0.65)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 54)
+                    .foregroundStyle(selection == section ? container.preferences.accent.color : Color.secondary)
+                    .background {
+                        if selection == section {
+                            RoundedRectangle(cornerRadius: 18).fill(container.preferences.accent.color.opacity(0.13)).padding(3)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier(section.identifier)
+                .accessibilityAddTraits(selection == section ? [.isSelected] : [])
+            }
+        }
+        .padding(4)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
+        .overlay { RoundedRectangle(cornerRadius: 24).stroke(.primary.opacity(0.08), lineWidth: 0.5) }
+        .padding(.horizontal, 16).padding(.bottom, 4)
+        .accessibilityElement(children: .contain)
+    }
+
+    private func snackbar(_ store: AssignmentStore) -> some View {
+        UndoSnackbar(coordinator: store.undo) {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.28)) { store.undoLatest() }
+        }
+        .animation(reduceMotion ? nil : .spring(response: 0.36, dampingFraction: 0.88), value: store.undo.latest?.id)
     }
 
     @ViewBuilder
@@ -126,8 +178,6 @@ struct AppNavigation: View {
       // Each sidebar destination owns a different navigation path. Keep their identities
       // distinct so SwiftUI never compares a task UUID path with another column's path.
       .id(section)
-      .safeAreaInset(edge: .bottom) { UndoSnackbar(coordinator: store.undo, undo: store.undoLatest) }
-      .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: store.undo.latest?.id)
     }
 
     private func open(_ route: HomeworkRoute) {

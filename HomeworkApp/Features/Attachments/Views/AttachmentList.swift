@@ -20,13 +20,17 @@ struct AttachmentList: View {
                 HStack {
                     Button { Task { await model.preview(reference) } } label: {
                         HStack(spacing: 12) {
-                            AttachmentThumbnail(reference: reference, size: 72)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(reference.name).lineLimit(2)
-                                Text(ByteCountFormatter.string(fromByteCount: Int64(reference.byteCount), countStyle: .file))
-                                    .font(.caption).foregroundStyle(.secondary)
+                            if UTType(reference.contentType)?.conforms(to: .image) == true {
+                                AttachmentThumbnail(reference: reference, size: 200, wide: true)
+                            } else {
+                                Image(systemName: "doc.text").font(.title).foregroundStyle(.secondary)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(reference.name).lineLimit(2)
+                                    Text(ByteCountFormatter.string(fromByteCount: Int64(reference.byteCount), countStyle: .file))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer(minLength: 0)
                             }
-                            Spacer(minLength: 0)
                         }.frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .buttonStyle(.borderless)

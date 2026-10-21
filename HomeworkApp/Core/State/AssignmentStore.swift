@@ -80,6 +80,7 @@ final class AssignmentStore {
         action(id, message: status == .active ? "Assignment restored" : "Assignment \(status.rawValue)") {
             $0.transition(to: status, at: Date())
         }
+        if status == .completed, assignment(id)?.status == .completed { AppHaptics.success() }
     }
 
     func delete(_ id: UUID) {

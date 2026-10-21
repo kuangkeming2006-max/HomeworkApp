@@ -85,6 +85,7 @@ def simulator(args):
         env = {"TEST_ORIENTATION": args.orientation}
         filters = {
             "all": [],
+            "preview": ["-only-testing:HomeworkAppUITests/InteractionPreviewTests"],
             "interfaces": ["-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
                            "-only-testing:HomeworkAppUITests/PerformanceLayoutTests"],
             "ai": ["-only-testing:HomeworkAppUITests/AIImportFlowTests"],
@@ -138,7 +139,7 @@ def main():
     parser.add_argument("--appearance", choices=["light", "dark"], default="light")
     parser.add_argument("--orientation", choices=["portrait", "landscape"], default="portrait")
     parser.add_argument("--runtime", type=int, default=27)
-    parser.add_argument("--test-scope", choices=["all", "interfaces", "ai"], default="all")
+    parser.add_argument("--test-scope", choices=["all", "preview", "interfaces", "ai"], default="all")
     args = parser.parse_args()
     ARTIFACTS.mkdir(exist_ok=True)
     if args.mode == "device":

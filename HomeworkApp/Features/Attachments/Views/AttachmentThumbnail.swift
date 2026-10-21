@@ -5,6 +5,7 @@ import HomeworkDomain
 struct AttachmentThumbnail: View {
     let reference: AttachmentReference
     var size: CGFloat = 48
+    var wide = false
     @Environment(\.attachmentService) private var service
     @State private var image: UIImage?
 
@@ -15,11 +16,12 @@ struct AttachmentThumbnail: View {
                 .font(.system(size: size * 0.5)).foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.quaternary) }
         }
-        .frame(width: size, height: size).clipped().clipShape(RoundedRectangle(cornerRadius: 8))
-        .accessibilityLabel(reference.name)
+        .frame(width: wide ? nil : size, height: size)
+        .frame(maxWidth: wide ? .infinity : nil).clipped().clipShape(RoundedRectangle(cornerRadius: 8))
+        .accessibilityLabel("Image preview")
         .task(id: "\(reference.sha256).\(size)") {
             guard let service else { return }
-            if let data = await AttachmentThumbnailCache.shared.thumbnail(reference, service: service, pixels: Int(size * 3)) {
+            if let data = await AttachmentThumbnailCache.shared.thumbnail(reference, service: service, pixels: wide ? 1080 : Int(size * 3)) {
                 guard !Task.isCancelled else { return }; image = UIImage(data: data)
             }
         }

@@ -16,6 +16,20 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var preferences = self.preferences
         Form {
+            Section("Appearance") {
+                Picker("Appearance", selection: $preferences.appearance) {
+                    ForEach(AppAppearance.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .accessibilityIdentifier("settings.appearance")
+                Picker("Theme color", selection: $preferences.accent) {
+                    ForEach(AppAccent.allCases) { accent in
+                        Label { Text(accent.rawValue) } icon: {
+                            Image(systemName: "circle.fill").foregroundStyle(accent.color)
+                        }.tag(accent)
+                    }
+                }
+                .accessibilityIdentifier("settings.accent")
+            }
             Section("AI") {
                 NavigationLink("AI provider") {
                     AISettingsView(preferences: preferences, secrets: secrets, buildProvider: buildProvider)

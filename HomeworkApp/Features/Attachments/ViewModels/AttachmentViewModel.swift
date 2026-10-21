@@ -16,7 +16,7 @@ final class AttachmentViewModel {
     private var closed = false
     private(set) var busy = false
     var errorMessage: String?
-    var previewURL: URL?
+    let previewPresentation = AttachmentPreviewModel()
     var references: [AttachmentReference] {
         if let store, let assignmentID { return store.assignment(assignmentID)?.attachments ?? [] }
         return draftReferences
@@ -94,8 +94,7 @@ final class AttachmentViewModel {
     }
 
     func preview(_ reference: AttachmentReference) async {
-        do { previewURL = try await service.url(for: reference) }
-        catch { errorMessage = error.localizedDescription }
+        await previewPresentation.open(reference, service: service)
     }
 
     func remove(_ reference: AttachmentReference) async {
