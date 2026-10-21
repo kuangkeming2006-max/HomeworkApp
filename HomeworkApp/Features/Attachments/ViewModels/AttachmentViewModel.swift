@@ -16,6 +16,7 @@ final class AttachmentViewModel {
     private var closed = false
     private(set) var busy = false
     var errorMessage: String?
+    var pendingRemoval: AttachmentReference?
     let previewPresentation = AttachmentPreviewModel()
     var references: [AttachmentReference] {
         if let store, let assignmentID { return store.assignment(assignmentID)?.attachments ?? [] }

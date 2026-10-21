@@ -28,8 +28,7 @@ private struct FullScreenImagePreview: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.attachmentService) private var service
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var image: UIImage?
-    @State private var failed = false
+    @State private var model = AttachmentImagePreviewModel()
     @State private var drag: CGFloat = 0
     @State private var zoom: CGFloat = 1
     @GestureState private var magnification: CGFloat = 1
@@ -39,13 +38,13 @@ private struct FullScreenImagePreview: View {
             ZStack(alignment: .topTrailing) {
                 Color.black.opacity(1 - min(drag / max(geometry.size.height, 1), 0.7)).ignoresSafeArea()
                 Group {
-                    if let image {
+                    if let image = model.image {
                         Image(uiImage: image).resizable().scaledToFit()
                             .scaleEffect(zoom * magnification * (reduceMotion ? 1 : 1 - min(drag / 1600, 0.2)))
                             .offset(y: drag)
                             .accessibilityLabel("Image preview")
                             .accessibilityIdentifier("attachment.image.content")
-                    } else if failed {
+                    } else if model.failed {
                         ContentUnavailableView("Unable to open image", systemImage: "photo.badge.exclamationmark")
                             .foregroundStyle(.white)
                     } else { ProgressView().tint(.white) }
@@ -70,21 +69,28 @@ private struct FullScreenImagePreview: View {
                 .onTapGesture(count: 2) {
                     withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.22)) { zoom = zoom > 1 ? 1 : 2 }
                 }
-                Button("Close image", systemImage: "xmark") { dismiss() }
-                    .labelStyle(.iconOnly).font(.title3.weight(.semibold))
-                    .foregroundStyle(.white).padding(12)
-                    .background(.black.opacity(0.5), in: Circle()).padding()
-                    .accessibilityIdentifier("attachment.image.close")
+                HStack {
+                    Group {
+                        if let url = model.shareURL {
+                            ShareLink(item: url) { Label("Share image", systemImage: "square.and.arrow.up") }
+                        } else {
+                            Button("Share image", systemImage: "square.and.arrow.up") {}.disabled(true)
+                        }
+                    }
+                    .accessibilityIdentifier("attachment.image.share")
+                    Spacer()
+                    Button("Close image", systemImage: "xmark") { dismiss() }
+                        .accessibilityIdentifier("attachment.image.close")
+                }
+                .labelStyle(.iconOnly).font(.title3.weight(.semibold))
+                .buttonStyle(.glass).buttonBorderShape(.circle).tint(.white)
+                .padding()
             }
         }
         .statusBarHidden()
         .accessibilityAction(.escape) { dismiss() }
         .task(id: reference.id) {
-            guard let service,
-                  let data = await AttachmentThumbnailCache.shared.thumbnail(reference, service: service, pixels: 2560),
-                  !Task.isCancelled else { failed = true; return }
-            image = UIImage(data: data)
-            failed = image == nil
+            await model.load(reference, service: service)
         }
     }
 }

@@ -11,6 +11,7 @@ struct CalendarView: View {
     @State private var preview = AttachmentPreviewModel()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.attachmentService) private var attachmentService
+    @Environment(\.workspaceToolbar) private var toolbar
 
     var body: some View {
         TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
@@ -33,14 +34,20 @@ struct CalendarView: View {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) { model.rebuild(values, now: context.date) }
             }
         }
+        .modifier(WorkspacePageFade())
         .navigationTitle("Calendar")
         .environment(\.calendar, model.calendar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Today") { model.today() }.accessibilityIdentifier("calendar.today")
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button("Add assignment", systemImage: "plus") { adding = true }.accessibilityIdentifier("calendar.add")
+                if let toolbar { WorkspaceToolbar(model: toolbar) }
+            }.sharedBackgroundVisibility(.hidden)
+        }
+        .onChange(of: toolbar?.request) { _, request in
+            guard let request, request.mode == .calendar else { return }
+            switch request.action {
+            case .today: model.today()
+            case .add: adding = true
+            case .ai: break
             }
         }
         .navigationDestination(isPresented: Binding(get: { openedID != nil }, set: { if !$0 { openedID = nil } })) {
@@ -54,7 +61,7 @@ struct CalendarView: View {
         .sheet(isPresented: $selectingMonth) {
             MonthYearPicker(calendar: model.calendar, selected: model.month) { model.selectMonth($0) }
         }
-        .sheet(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
+        .fullScreenCover(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
         .attachmentPreview(preview)
     }
 

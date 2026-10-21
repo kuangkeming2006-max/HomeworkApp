@@ -91,6 +91,17 @@ struct AssignmentDetailView: View {
         .interactiveDismissDisabled(closing || attachmentModel?.busy == true)
         // Presentation belongs to the stable Form, not its virtualized Section cells.
         .attachmentPreview(attachmentModel?.previewPresentation ?? unavailablePreview)
+        .confirmationDialog("Remove attachment?", isPresented: Binding(
+            get: { attachmentModel?.pendingRemoval != nil },
+            set: { if !$0 { attachmentModel?.pendingRemoval = nil } }),
+            titleVisibility: .visible, presenting: attachmentModel?.pendingRemoval) { reference in
+                Button("Remove attachment", role: .destructive) {
+                    Task { await attachmentModel?.remove(reference) }
+                }.tint(.red)
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("This removes the attachment from this assignment.")
+            }
         .task {
             guard attachmentModel == nil, let attachmentService else { return }
             if editor.isNew {

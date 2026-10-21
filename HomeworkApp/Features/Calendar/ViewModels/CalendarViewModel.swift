@@ -5,7 +5,7 @@ import HomeworkDomain
 @Observable @MainActor
 final class CalendarViewModel {
     var month: Date
-    var selectedDate: Date
+    private(set) var selectedDate: Date
     private(set) var calendar: Calendar
     private(set) var index: AssignmentDayIndex
     private(set) var direction = 1
@@ -34,10 +34,11 @@ final class CalendarViewModel {
 
     func selectMonth(_ next: Date) {
         direction = next >= month ? 1 : -1
-        let day = calendar.component(.day, from: selectedDate)
         month = calendar.dateInterval(of: .month, for: next)?.start ?? next
-        let maximum = calendar.range(of: .day, in: .month, for: month)?.count ?? 28
-        selectedDate = calendar.date(byAdding: .day, value: min(day, maximum) - 1, to: month) ?? month
+    }
+
+    func selectDay(_ day: Date) {
+        selectedDate = calendar.startOfDay(for: day)
     }
 
     func today() {

@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 private struct AppAccentKey: EnvironmentKey {
-    static let defaultValue = Color.blue
+    static let defaultValue = Color(red: 0.55, green: 0.45, blue: 0.96)
 }
 
 extension EnvironmentValues {
@@ -32,7 +32,7 @@ enum AppAccent: String, CaseIterable, Identifiable {
         switch self {
         case .blue: .blue
         case .indigo: .indigo
-        case .purple: .purple
+        case .purple: Color(red: 0.55, green: 0.45, blue: 0.96)
         case .pink: .pink
         case .orange: .orange
         case .green: .green

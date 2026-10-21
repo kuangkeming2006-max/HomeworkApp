@@ -5,18 +5,27 @@ import HomeworkDomain
 
 @MainActor
 final class CalendarTests: XCTestCase {
-    func testMonthSelectionPreservesDayAndClampsFebruary() throws {
+    func testMonthBrowsingPreservesSelectionUntilExplicitDaySelection() throws {
         let calendar = Calendar.current
         let january = try XCTUnwrap(calendar.date(from: DateComponents(year: 2028, month: 1, day: 31)))
+        let leapDay = try XCTUnwrap(calendar.date(from: DateComponents(year: 2028, month: 2, day: 29)))
         let model = CalendarViewModel(now: january)
+        XCTAssertEqual(model.selectedDate, january)
         model.shiftMonth(1)
         XCTAssertEqual(model.calendar.component(.month, from: model.month), 2)
-        XCTAssertEqual(model.calendar.component(.day, from: model.selectedDate), 29)
+        XCTAssertEqual(model.selectedDate, january, "Browsing February must retain the selected January date")
         XCTAssertEqual(model.direction, 1)
-        model.shiftMonth(-1); XCTAssertEqual(model.direction, -1)
-        XCTAssertEqual(model.calendar.component(.day, from: model.selectedDate), 29)
+        model.selectDay(leapDay)
+        XCTAssertEqual(model.selectedDate, leapDay)
+        model.shiftMonth(1)
+        XCTAssertEqual(model.calendar.component(.month, from: model.month), 3)
+        XCTAssertEqual(model.selectedDate, leapDay, "Browsing March must retain the explicitly selected leap day")
+        model.shiftMonth(-1)
+        XCTAssertEqual(model.direction, -1)
+        XCTAssertEqual(model.selectedDate, leapDay)
         model.today()
         XCTAssertTrue(model.calendar.isDateInToday(model.selectedDate))
+        XCTAssertEqual(model.calendar.dateInterval(of: .month, for: model.selectedDate)?.start, model.month)
     }
 
     func testCalendarIndexBenchmarkMatchesPreviousCellScans() {

@@ -21,11 +21,15 @@ struct SettingsView: View {
                     ForEach(AppAppearance.allCases) { Text($0.rawValue).tag($0) }
                 }
                 .accessibilityIdentifier("settings.appearance")
-                Picker("Theme color", selection: $preferences.accent) {
-                    ForEach(AppAccent.allCases) { accent in
-                        Label { Text(accent.rawValue) } icon: {
-                            Image(systemName: "circle.fill").foregroundStyle(accent.color)
-                        }.tag(accent)
+                .tint(.blue)
+                NavigationLink {
+                    ThemeColorPicker(preferences: preferences)
+                } label: {
+                    HStack {
+                        Text("Theme color").foregroundStyle(.primary)
+                        Spacer()
+                        Circle().fill(preferences.accent.color).frame(width: 18, height: 18)
+                        Text(preferences.accent.rawValue).foregroundStyle(.secondary)
                     }
                 }
                 .accessibilityIdentifier("settings.accent")

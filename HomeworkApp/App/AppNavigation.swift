@@ -28,6 +28,7 @@ struct AppNavigation: View {
     @State private var selection: AppSection? = .assignments
     @State private var pageVisible = true
     @State private var pageTransition = UUID()
+    @State private var workspaceToolbar = WorkspaceToolbarModel()
     @State private var requestedAssignment: AssignmentNavigationRequest?
     @State private var education = false
     let container: AppContainer
@@ -51,12 +52,17 @@ struct AppNavigation: View {
         .environment(\.locale, Locale(identifier: "en_US"))
         .tint(container.preferences.accent.color)
         .environment(\.appAccent, container.preferences.accent.color)
+        .environment(\.workspaceToolbar, workspaceToolbar)
+        .environment(\.workspacePageVisible, pageVisible)
         .preferredColorScheme(container.preferences.appearance.colorScheme)
         .environment(\.dynamicTypeSize, effectiveTypeSize)
         .environment(\.attachmentService, container.attachmentService)
         .environment(\.llmProviderFactory, { [container] in try container.makeLLMProvider() })
         .onChange(of: scenePhase) { _, phase in
             container.setForeground(phase == .active)
+        }
+        .onChange(of: selection) { _, section in
+            if let mode = toolbarMode(section), !workspaceToolbar.switching { workspaceToolbar.mode = mode }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             container.refreshServices()
@@ -111,13 +117,10 @@ struct AppNavigation: View {
                 }
             }
             .toolbar(.hidden, for: .tabBar)
-            .opacity(pageVisible ? 1 : 0)
-            .offset(y: reduceMotion || pageVisible ? 0 : 8)
             .allowsHitTesting(pageVisible)
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                VStack(spacing: 6) {
-                    snackbar(store)
-                    equalWidthTabBar
+                equalWidthTabBar.overlay(alignment: .bottom) {
+                    snackbar(store).padding(.bottom, 70)
                 }
             }
         }
@@ -138,7 +141,7 @@ struct AppNavigation: View {
                     .foregroundStyle(selection == section ? container.preferences.accent.color : Color.secondary)
                     .background {
                         if selection == section {
-                            RoundedRectangle(cornerRadius: 18).fill(container.preferences.accent.color.opacity(0.13)).padding(3)
+                            Capsule().fill(Color.primary.opacity(0.08)).padding(3)
                         }
                     }
                     .contentShape(Rectangle())
@@ -149,8 +152,7 @@ struct AppNavigation: View {
             }
         }
         .padding(4)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 24))
-        .overlay { RoundedRectangle(cornerRadius: 24).stroke(.primary.opacity(0.08), lineWidth: 0.5) }
+        .glassEffect(.regular, in: .capsule)
         .padding(.horizontal, 16).padding(.bottom, 4)
         .accessibilityElement(children: .contain)
     }
@@ -160,13 +162,28 @@ struct AppNavigation: View {
         AppHaptics.selection()
         let token = UUID()
         pageTransition = token
-        guard !reduceMotion else { selection = section; pageVisible = true; return }
-        withAnimation(.easeInOut(duration: 0.12), completionCriteria: .logicallyComplete) {
+        guard !reduceMotion else {
+            if let mode = toolbarMode(section) { workspaceToolbar.mode = mode }
+            selection = section; pageVisible = true; workspaceToolbar.switching = false; return
+        }
+        let morphsToolbar = toolbarMode(selection) != nil && toolbarMode(section) != nil
+        workspaceToolbar.switching = true
+        withAnimation(morphsToolbar ? .spring(response: 0.3, dampingFraction: 0.72) : .easeInOut(duration: 0.18), completionCriteria: .logicallyComplete) {
+            if let mode = toolbarMode(section) { workspaceToolbar.mode = mode }
             pageVisible = false
         } completion: {
             guard pageTransition == token else { return }
             selection = section
-            withAnimation(.easeOut(duration: 0.2)) { pageVisible = true }
+            workspaceToolbar.switching = false
+            pageVisible = true
+        }
+    }
+
+    private func toolbarMode(_ section: AppSection?) -> WorkspaceToolbarMode? {
+        switch section {
+        case .assignments: .assignments
+        case .calendar: .calendar
+        default: nil
         }
     }
 
@@ -174,7 +191,6 @@ struct AppNavigation: View {
         UndoSnackbar(coordinator: store.undo) {
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.28)) { store.undoLatest() }
         }
-        .animation(reduceMotion ? nil : .spring(response: 0.36, dampingFraction: 0.88), value: store.undo.latest?.id)
     }
 
     @ViewBuilder
@@ -183,11 +199,12 @@ struct AppNavigation: View {
         switch section {
         case .assignments: AssignmentWorkspace(store: store, request: requestedAssignment)
         case .calendar: NavigationStack { CalendarView(store: store) }
-        case .briefing: NavigationStack { BriefingView(store: store, history: container.briefingHistory) }
+        case .briefing: NavigationStack { BriefingView(store: store, history: container.briefingHistory).modifier(WorkspacePageFade()) }
         case .settings: NavigationStack {
             SettingsView(version: container.version, preferences: container.preferences,
                          notifications: container.notifications, store: store, backupService: container.backupService,
                          secrets: container.secrets, buildProvider: container.providerBuilder, liveActivities: container.liveActivities)
+                .modifier(WorkspacePageFade())
         }
         }
       }
@@ -199,9 +216,11 @@ struct AppNavigation: View {
     private func open(_ route: HomeworkRoute) {
         pageTransition = UUID()
         pageVisible = true
+        workspaceToolbar.switching = false
         switch route {
         case .assignment(let id): selection = .assignments; requestedAssignment = .init(assignmentID: id)
         case .briefing: selection = .briefing
         }
+        if let mode = toolbarMode(selection) { workspaceToolbar.mode = mode }
     }
 }
