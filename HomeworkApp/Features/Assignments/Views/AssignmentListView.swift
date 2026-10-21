@@ -36,24 +36,16 @@ struct AssignmentListView: View {
             TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
             List {
                 ForEach(projection.sections) { section in
-                    Section {
-                        if section.rows.isEmpty {
-                            Text(search.isEmpty ? "No \(section.title.lowercased()) assignments" : "No matching assignments")
-                                .font(.subheadline).foregroundStyle(.secondary).padding(.vertical, 14)
-                                .accessibilityIdentifier("assignments.empty.\(section.id.rawValue)")
-                                .id(section.id)
-                        }
-                        ForEach(section.rows) { assignment in
-                            row(assignment, now: context.date)
-                                .id(assignment.id)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
-                    } header: {
                         HStack(spacing: 8) {
                             Circle().fill(section.id.markerColor).frame(width: 8, height: 8)
-                            Text(section.title).font(.headline).foregroundStyle(.primary)
+                            Text(section.title).font(.headline).foregroundStyle(.secondary)
                         }
-                            .textCase(nil).accessibilityIdentifier("assignments.section.\(section.id.rawValue)")
+                            .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 12, trailing: 16))
+                            .listRowSeparator(.hidden)
+                            .accessibilityElement(children: .combine)
+                            .accessibilityAddTraits(.isHeader)
+                            .accessibilityIdentifier("assignments.section.\(section.id.rawValue)")
+                            .id(section.id)
                             .onGeometryChange(for: CGFloat.self) { geometry in
                                 geometry.frame(in: .global).minY.rounded(.down)
                             } action: { position in
@@ -64,7 +56,16 @@ struct AssignmentListView: View {
                             .onDisappear {
                                 sectionHeaderPositions.removeValue(forKey: section.id)
                             }
-                    }
+                        if section.rows.isEmpty {
+                            Text(search.isEmpty ? "No \(section.title.lowercased()) assignments" : "No matching assignments")
+                                .font(.subheadline).foregroundStyle(.secondary).padding(.vertical, 14)
+                                .accessibilityIdentifier("assignments.empty.\(section.id.rawValue)")
+                        }
+                        ForEach(section.rows) { assignment in
+                            row(assignment, now: context.date)
+                                .id(assignment.id)
+                                .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
                 }
             }
             .listStyle(.plain)
@@ -152,9 +153,9 @@ struct AssignmentListView: View {
             category = next
             // Native list scrolling clamps short terminal sections naturally.
             // No viewport-sized spacer is inserted below the actual content.
-            if let first = projection.sections.first(where: { $0.id == next })?.rows.first {
-                proxy.scrollTo(first.id, anchor: .top)
-            } else { proxy.scrollTo(next, anchor: .top) }
+            // The separator is a concrete list row, so it is a reliable scroll
+            // target and cannot pin over the first assignment's title.
+            proxy.scrollTo(next, anchor: .top)
         })) {
             ForEach(AssignmentStatus.allCases) { Text($0.categoryTitle).tag($0) }
         }
@@ -172,7 +173,7 @@ struct AssignmentListView: View {
         let visibleTop = listOriginY + listTopInset
         let pastTop = AssignmentStatus.allCases.last { status in
             guard let position = sectionHeaderPositions[status] else { return false }
-            // Native section headers inset their visible title below the List edge.
+            // Separator titles have a standard top row inset.
             return position <= visibleTop + 24
         }
         // Above the first header, the title area still belongs to Upcoming.

@@ -32,6 +32,12 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
             categories.buttons["Upcoming"].tap()
             capture("Upcoming — return \(index)")
             XCTAssertTrue(categories.buttons["Upcoming"].isSelected, "A completed jump must not bounce back to Abandoned")
+            let upcomingHeader = list.descendants(matching: .any).matching(identifier: "assignments.section.active").firstMatch
+            let firstRow = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.' AND label CONTAINS 'Networking laboratory'")).firstMatch
+            XCTAssertTrue(upcomingHeader.exists)
+            XCTAssertTrue(firstRow.isHittable)
+            XCTAssertGreaterThanOrEqual(firstRow.frame.minY, upcomingHeader.frame.maxY - 2,
+                                       "A category separator must not cover the first assignment title")
         }
         list.swipeDown()
         XCTAssertTrue(app.searchFields.firstMatch.waitForExistence(timeout: 5))
