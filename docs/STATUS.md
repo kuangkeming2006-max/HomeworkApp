@@ -2,7 +2,7 @@
 
 ## Current development — 0.2.1 / build 3
 
-Branch: `feature/iphone-interactions-theme`. Application source: `8202c8f`.
+Branch: `feature/iphone-interactions-theme`; [draft PR #1](https://github.com/kuangkeming2006-max/HomeworkApp/pull/1). Application source: `ebf97f7`.
 
 - Four equal-width iPhone navigation buttons with native tab containment and interruptible fade/movement.
 - One vertical Assignments list with Upcoming/Completed/Abandoned headings, compact leading title on scroll, native full-swipe completion/deletion, success haptics and a three-action bottom sheet.
@@ -12,7 +12,11 @@ Branch: `feature/iphone-interactions-theme`. Application source: `8202c8f`.
 
 The [first runtime capture](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39547452633) built both targets but failed to tap the thumbnail. Its screenshot/hierarchy showed overlapping hidden navigation stacks and a bottom search field under custom navigation. Those findings led to native TabView containment and an explicit top search drawer; the initial green device build alone is not runtime acceptance.
 
-The [build-3 focused run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39548721540) has a successful unsigned arm64 device build; the focused iPhone runtime capture is still pending. This is one short synthetic capture flow, not the broad historical regression suite. Historical category-navigation assertions remain available and require adaptation before using that suite for the new UI. Physical haptic feel, signing and installation remain unverified.
+The [second capture](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39548721540) confirmed the actual fullscreen image and corrected top search layout, but its Close query failed because a container accessibility identifier overrode the child's identifier. The final source removes that identifier propagation.
+
+The [final focused run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39549674473) **passed both the unsigned arm64 device build and actual iPhone Air / iOS 27 launch/capture**. The single synthetic capture case passed in 77.553 seconds, with 14 PNGs. It exercised list/editor image opening and downward dismissal, the three-button sheet, native full-swipe completion/deletion with Undo, calendar drag/previous/next/date selection, and Dark/System/Purple appearance changes. Screenshots of the sheet, image crop, restored separators, equal navigation widths, Undo, calendar and themes were inspected. The immediate date-selection PNG captures the requested crossfade in progress; the settled month screenshot is also retained. Simulator metadata reports no runtime warnings; the build log has the SDK's AppIntents metadata-skipped warning, with no compiler errors.
+
+Full and extension-free 0.2.1/build-3 unsigned IPAs, SHA-256 hashes, source/run metadata and named screenshots are saved in the local `outputs/Builds/v0.2.1` handoff. App identity, version/build, widget variants and absence of provisioning were checked inside both packages. This is one focused capture flow, not the broad historical regression suite. Historical category-navigation assertions remain available and require adaptation before using that suite for the new UI. Physical haptic feel, signing and installation remain unverified; screenshots do not certify frame rate or exact App Store haptic feel.
 
 ## Previous delivery — 0.2.0
 
