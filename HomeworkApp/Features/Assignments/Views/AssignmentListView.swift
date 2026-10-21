@@ -31,7 +31,9 @@ struct AssignmentListView: View {
           VStack(spacing: 0) {
             Picker("Category", selection: Binding(get: { category }, set: { next in
                 category = next
-                proxy.scrollTo(next, anchor: .top)
+                if let first = projection.sections.first(where: { $0.id == next })?.rows.first {
+                    proxy.scrollTo(first.id, anchor: .top)
+                } else { proxy.scrollTo(next, anchor: .top) }
             })) {
                 ForEach(AssignmentStatus.allCases) { Text($0.categoryTitle).tag($0) }
             }
@@ -48,9 +50,11 @@ struct AssignmentListView: View {
                             Text(search.isEmpty ? "No \(section.title.lowercased()) assignments" : "No matching assignments")
                                 .font(.subheadline).foregroundStyle(.secondary).padding(.vertical, 14)
                                 .accessibilityIdentifier("assignments.empty.\(section.id.rawValue)")
+                                .id(section.id)
                         }
                         ForEach(section.rows) { assignment in
                             row(assignment, now: context.date)
+                                .id(assignment.id)
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                     } header: {
@@ -70,7 +74,6 @@ struct AssignmentListView: View {
                                 if sectionHeaderPositions.removeValue(forKey: section.id) != nil { updateCategoryForScroll() }
                             }
                     }
-                    .id(section.id)
                 }
             }
             .listStyle(.plain)
@@ -123,7 +126,10 @@ struct AssignmentListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                if collapsedTitle { Text("Assignments").font(.headline).allowsHitTesting(false) }
+                if collapsedTitle {
+                    Text("Assignments").font(.headline).allowsHitTesting(false)
+                        .accessibilityIdentifier("assignments.compactTitle")
+                }
             }
             .sharedBackgroundVisibility(.hidden)
             ToolbarItem(placement: .topBarTrailing) {

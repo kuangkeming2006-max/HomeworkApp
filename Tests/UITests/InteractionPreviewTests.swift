@@ -11,6 +11,8 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         let list = app.collectionViews["assignments.list"]
         let thumbnail = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.thumbnail.'")).firstMatch
         XCTAssertTrue(thumbnail.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["assignments.add"].isHittable)
+        XCTAssertTrue(app.buttons["assignments.ai"].isHittable)
         let categories = app.segmentedControls["assignments.filter"]
         XCTAssertTrue(categories.waitForExistence(timeout: 5))
         XCTAssertEqual(categories.buttons.count, 3)
@@ -20,6 +22,8 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         XCTAssertFalse(categories.buttons["All"].exists)
         capture("Three categories and colored sections")
         categories.buttons["Completed"].tap()
+        list.swipeUp()
+        XCTAssertTrue(app.staticTexts["assignments.compactTitle"].waitForExistence(timeout: 5))
         capture("Completed category and compact heading")
         categories.buttons["Upcoming"].tap()
         thumbnail.tap()

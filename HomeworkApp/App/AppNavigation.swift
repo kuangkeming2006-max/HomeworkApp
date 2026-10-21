@@ -168,14 +168,21 @@ struct AppNavigation: View {
         }
         let morphsToolbar = toolbarMode(selection) != nil && toolbarMode(section) != nil
         workspaceToolbar.switching = true
-        withAnimation(morphsToolbar ? .spring(response: 0.3, dampingFraction: 0.72) : .easeInOut(duration: 0.18), completionCriteria: .logicallyComplete) {
-            if let mode = toolbarMode(section) { workspaceToolbar.mode = mode }
-            pageVisible = false
-        } completion: {
+        let finish = {
             guard pageTransition == token else { return }
             selection = section
             workspaceToolbar.switching = false
-            pageVisible = true
+            withAnimation(.easeInOut(duration: 0.18)) { pageVisible = true }
+        }
+        if morphsToolbar, let mode = toolbarMode(section) {
+            withAnimation(.easeInOut(duration: 0.18)) { pageVisible = false }
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.72), completionCriteria: .logicallyComplete) {
+                workspaceToolbar.mode = mode
+            } completion: { finish() }
+        } else {
+            withAnimation(.easeInOut(duration: 0.18), completionCriteria: .logicallyComplete) {
+                pageVisible = false
+            } completion: { finish() }
         }
     }
 

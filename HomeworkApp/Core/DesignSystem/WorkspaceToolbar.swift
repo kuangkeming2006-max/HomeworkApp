@@ -21,10 +21,8 @@ final class WorkspaceToolbarModel {
 
 struct WorkspacePageFade: ViewModifier {
     @Environment(\.workspacePageVisible) private var visible
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func body(content: Content) -> some View {
         content.opacity(visible ? 1 : 0)
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: visible)
     }
 }
 
@@ -50,7 +48,6 @@ extension EnvironmentValues {
 struct WorkspaceToolbar: View {
     @Bindable var model: WorkspaceToolbarModel
     @Namespace private var glass
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GlassEffectContainer(spacing: 12) {
@@ -86,8 +83,8 @@ struct WorkspaceToolbar: View {
             .glassEffect(.regular.interactive(), in: .capsule)
             .glassEffectID("workspace.actions", in: glass)
             .glassEffectTransition(.matchedGeometry)
-            .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.72), value: model.mode)
         }
+        .fixedSize(horizontal: true, vertical: false)
         .disabled(model.switching)
     }
 }
