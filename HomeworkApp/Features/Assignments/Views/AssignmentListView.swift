@@ -167,7 +167,8 @@ struct AssignmentListView: View {
         let visibleTop = listOriginY + listTopInset
         let pastTop = AssignmentStatus.allCases.last { status in
             guard let position = sectionHeaderPositions[status] else { return false }
-            return position <= visibleTop + 1
+            // Native section headers inset their visible title below the List edge.
+            return position <= visibleTop + 24
         }
         // Above the first header, the title area still belongs to Upcoming.
         let next = pastTop ?? (sectionHeaderPositions[.active] != nil ? AssignmentStatus.active : nil)

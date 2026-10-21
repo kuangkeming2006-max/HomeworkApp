@@ -134,11 +134,11 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(share.waitForExistence(timeout: 5))
         XCTAssertTrue(share.isEnabled)
         share.tap()
-        let closeShare = app.buttons.matching(NSPredicate(format: "label == 'Close'")).firstMatch
-        XCTAssertTrue(closeShare.waitForExistence(timeout: 10))
+        let shareSheet = app.collectionViews["activityCollectionView"]
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 5))
         capture("Native image share sheet")
-        closeShare.tap()
-        XCTAssertTrue(closeShare.waitForNonExistence(timeout: 5))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)).tap()
+        XCTAssertTrue(shareSheet.waitForNonExistence(timeout: 5))
         app.swipeDown()
         XCTAssertTrue(app.buttons["attachment.image.close"].waitForNonExistence(timeout: 5))
         let imageRow = app.cells.containing(.button, identifier: image.identifier).firstMatch
