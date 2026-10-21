@@ -24,6 +24,7 @@
 - Apple validation is `.github/workflows/apple.yml`. It inventories Xcode/SDKs/simulators, selects real destinations and retains diagnostics on failure.
 - Use synthetic launch fixtures for UI tests. Stable accessibility identifiers belong on major controls. Never call a real LLM in CI.
 - Screenshots must cover iPhone portrait, iPad portrait/landscape, Light and Dark Mode. Inspect PNGs from the actual run before claiming visual acceptance.
+- Current delivery priority is iPhone. Keep iPad functional and adaptive, but do not block delivery on further iPad visual refinement. Manual `coverage=iphone`, `tests=all` runs the complete iPhone regression in both appearances; retain `coverage=full` for the complete iPad matrix and report each scope accurately.
 - Keep an unsigned arm64 iPhoneOS build separate from simulator builds. Unsigned IPA packaging does not mean installable or signed. No paid certificate or backend is required.
 - Free-account installation, actual notification delivery, file sharing and re-signing data retention require a physical-device checklist.
 - Avoid endless retries. If an environment or permissions block occurs, state the exact missing capability and leave stages unverified.
