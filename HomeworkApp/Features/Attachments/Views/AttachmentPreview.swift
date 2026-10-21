@@ -44,6 +44,7 @@ private struct FullScreenImagePreview: View {
                             .scaleEffect(zoom * magnification * (reduceMotion ? 1 : 1 - min(drag / 1600, 0.2)))
                             .offset(y: drag)
                             .accessibilityLabel("Image preview")
+                            .accessibilityIdentifier("attachment.image.content")
                     } else if failed {
                         ContentUnavailableView("Unable to open image", systemImage: "photo.badge.exclamationmark")
                             .foregroundStyle(.white)
@@ -77,7 +78,6 @@ private struct FullScreenImagePreview: View {
             }
         }
         .statusBarHidden()
-        .accessibilityIdentifier("attachment.image.fullScreen")
         .accessibilityAction(.escape) { dismiss() }
         .task(id: reference.id) {
             guard let service,

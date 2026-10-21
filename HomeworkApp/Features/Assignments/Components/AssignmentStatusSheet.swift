@@ -33,7 +33,6 @@ struct AssignmentStatusSheet: View {
         .presentationDetents([.height(230)])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(20)
-        .accessibilityIdentifier("assignments.statusSheet")
     }
 
     private func action(_ title: String, symbol: String, color: Color, perform: @escaping () -> Void) -> some View {
