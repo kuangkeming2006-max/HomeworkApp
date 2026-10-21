@@ -27,6 +27,7 @@ struct AppNavigation: View {
     @Environment(\.dynamicTypeSize) private var systemTypeSize
     @State private var selection: AppSection? = .assignments
     @State private var pageVisible = true
+    @State private var morphingWorkspace = false
     @State private var pageTransition = UUID()
     @State private var workspaceToolbar = WorkspaceToolbarModel()
     @State private var requestedAssignment: AssignmentNavigationRequest?
@@ -53,7 +54,7 @@ struct AppNavigation: View {
         .tint(container.preferences.accent.color)
         .environment(\.appAccent, container.preferences.accent.color)
         .environment(\.workspaceToolbar, workspaceToolbar)
-        .environment(\.workspacePageVisible, pageVisible)
+        .environment(\.workspacePageVisible, morphingWorkspace ? pageVisible : true)
         .preferredColorScheme(container.preferences.appearance.colorScheme)
         .environment(\.dynamicTypeSize, effectiveTypeSize)
         .environment(\.attachmentService, container.attachmentService)
@@ -117,6 +118,7 @@ struct AppNavigation: View {
                 }
             }
             .toolbar(.hidden, for: .tabBar)
+            .opacity(morphingWorkspace || pageVisible ? 1 : 0)
             .allowsHitTesting(pageVisible)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 equalWidthTabBar.overlay(alignment: .bottom) {
@@ -167,6 +169,7 @@ struct AppNavigation: View {
             selection = section; pageVisible = true; workspaceToolbar.switching = false; return
         }
         let morphsToolbar = toolbarMode(selection) != nil && toolbarMode(section) != nil
+        morphingWorkspace = morphsToolbar
         workspaceToolbar.switching = true
         let finish = {
             guard pageTransition == token else { return }
