@@ -1,6 +1,34 @@
 # Redesign status — iPhone delivery
 
-## Current development — 0.2.1 / build 3
+## Current development — 0.2.2 / build 4
+
+Branch: `feature/iphone-interactions-theme`; [draft PR #1](https://github.com/kuangkeming2006-max/HomeworkApp/pull/1). Application source: `87af479`; current capture/script source: `f3355f2`.
+
+- Native iOS 27 Liquid Glass controls with the iOS/iPadOS 26 deployment minimum retained; four equal-width navigation buttons.
+- Plain page fades, with a separate spring morph for the shared Assignments/Calendar action strip. The compact leading Assignments title is plain text without a glass/button background.
+- Retained Upcoming/Completed/Abandoned segmented jump controls and matching fixed-color vertical section markers; only All is removed.
+- Original 0.2.0 lavender as the default accent, a dedicated list of actual color swatches and the original accent-control scope. Destructive actions remain red; new status/category/share controls retain semantic colors.
+- A fixed rounded bottom card with vertical solid-color actions, no Cancel button and outside-tap dismissal. Undo retains its message until the exit animation completes, including automatic expiry.
+- Calendar month swipes, arrows and direct month/year browsing preserve the selected absolute date and its details; deliberate date-cell taps are separated from drag handling.
+- Attachment rows use confirmed red swipe deletion. Fullscreen images offer sharing and downward dismissal; Photos and Files occupy one row with independent left/right targets.
+
+The [first build-4 run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39578509340) passed the unsigned device build and simulator compilation. Its actual runtime capture failed after 82.745 seconds at Calendar → Settings: the page faded out but the switch completion never finished. Retained screenshots also exposed the action strip's intrinsic-width layout and unreliable section-header scroll targeting. Source `e4cdef2` separates parent-owned fade and spring transactions, fixes the toolbar's intrinsic size and targets concrete row IDs for category jumps. The failed run is not runtime acceptance.
+
+The [second build-4 run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39580590879) also passed the unsigned device build and simulator compilation, but its runtime capture failed after 31.362 seconds at the initial Add button's hittability check. The accessibility hierarchy exposed only the native Sort button, with Add and AI missing: fixing the action strip's intrinsic size was insufficient. Commits `464610e` and `10c04b3` replace the toolbar Menu with ordinary Sort/Add/AI buttons and route Sort to a native Priority/Deadline confirmation dialog presented by the stable AssignmentList root.
+
+The [third completed build-4 run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39583544244), on `1772c06`, reached and passed the toolbar Add/AI and compact-title presence checks, then exercised the status card, full swipes, image previews and calendar. It failed after 122.328 seconds at Calendar → Settings with another blank page, proving removal of child animations was insufficient. Commit `535ada8` moves ordinary fades directly onto the native TabView's opacity, reserving the body-fade environment for the two workspace pages. Source `a4f6969` also fixes the observed compact-title truncation with an intrinsic-size constraint and adds a viewport-based bottom scroll margin so terminal category sections can reach the top.
+
+The [fourth build-4 run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39585406208), on `a4f6969`, passed the unsigned device build and simulator compilation. Its 161.449-second runtime case failed only when the script looked for Close on the native share sheet. Inspected screenshots confirm completed page fades, the full compact Assignments title, seven distinct swatches, restricted Orange accent, one-row Photos/Files controls, the large image without a permanent trash icon and the open native share sheet. The iOS 27 share popover exposes `activityCollectionView` and `PopoverDismissRegion`, not Close. Source `87af479` captures that observed collection and dismisses by tapping outside; it also increases category tracking tolerance from 1 to 24 points for native header insets. This failed capture is not a complete runtime pass.
+
+The [fifth build-4 run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39588314459), on `87af479`, exceeded the unchanged 180-second case allowance and reported 227.799 seconds overall. An editor-image accessibility lookup stalled from approximately 168 to 213 seconds; the subsequent share-sheet failure occurred after timeout and is not reliable product-failure evidence. Its screenshots confirm the Completed segment now tracks the visible section, the full compact title, and the preceding category/swipe/calendar/theme/editor flows.
+
+The [attachment-only run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39590712643), on capture/script source `7934fc8`, passed its unsigned device build but its 119.884-second runtime capture failed at confirmation dismissal. Sharing, the red attachment Delete action and the native confirmation popup had all appeared. The scripted cancellation tap at normalized coordinates `(0.5, 0.15)` landed inside that popup, so the disappearance assertion timed out. Capture-only commit `f3355f2` moves the tap to `(0.9, 0.5)`, outside the observed popup; application code remains unchanged from `87af479`.
+
+The [final focused run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39623429110), on capture/script source `f3355f2`, passed the unsigned arm64 device build and simulator compilation, but the short attachment capture failed. Querying native `ShareSheet.RemoteContainerView` stalled from 37.74 seconds, with existence retries returning only around 78 and 109 seconds; the unchanged 180-second case allowance expired, and xcodebuild reported 242.899 seconds overall. No new PNGs were produced, and execution did not reach the corrected confirmation-cancellation tap. Application source remains `87af479`; no additional CI rerun or assertion change follows this result. The original long capture and all its assertions remain available for manual invocation.
+
+The 0.2.2/build-4 handoff retains the two unsigned IPA variants and the earlier screenshot evidence: 16 PNGs from run `39588314459` and 4 from `39590712643`. Prior screenshots and failures are preserved rather than presented as a complete green runtime run. The cancellation-coordinate correction and physical haptic feel remain unverified; signing/installation and frame rate also remain physical checks. No full regression pass is claimed.
+
+## Previous development — 0.2.1 / build 3
 
 Branch: `feature/iphone-interactions-theme`; [draft PR #1](https://github.com/kuangkeming2006-max/HomeworkApp/pull/1). Application source: `ebf97f7`.
 

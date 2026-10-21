@@ -1,16 +1,18 @@
 # Homework
 
-Native SwiftUI homework deadline manager for iPhone and iPad. Development happens on Windows/Linux; GitHub Actions provides Xcode 27 and iOS 27 simulators. The deployment minimum is iOS/iPadOS 26. See [verified delivery status](docs/STATUS.md).
+Native SwiftUI homework deadline manager with iOS 27 Liquid Glass controls and an iOS/iPadOS 26 deployment minimum. Development happens on Windows/Linux; GitHub Actions provides Xcode 27 and iOS 27 simulators. See [verified delivery status](docs/STATUS.md).
 
 ## Features
 
-- Offline SwiftData assignments in vertically stacked status sections, full-swipe actions, success haptics, animated guarded Undo, search and priority/deadline sorting. V1 records/backups are preserved through V2 migration.
-- Indexed month calendar with finger-following translation, distinct status dots, direct month/year selection and fading day details; equal-width iPhone navigation and retained sidebar support.
+- Offline SwiftData assignments with three category jump controls and colored vertical sections, full-swipe actions, success haptics, animated guarded Undo, search and priority/deadline sorting. V1 records/backups are preserved through V2 migration.
+- Indexed month calendar with finger-following translation that preserves the selected date, deliberate date taps, distinct status dots and fading day details.
+- Equal-width iPhone navigation with plain page fades and a separate spring morph for the Assignments/Calendar action strip; retained sidebar support.
 - Independent reminders, notification actions/deep links, incremental scheduling and a shared pending-request budget.
 - Local scheduled Live Activities with compact/minimal/expanded/Lock Screen layouts and an ordinary-notification fallback; no server/APNs requirement.
 - Offline Briefing with daily workload/progress, observed history and optional finite scheduled reports.
-- Persistent Photos/Files attachments, staged drafts, cached thumbnails, fullscreen images with downward dismissal and document Quick Look.
-- Saved theme colors and System/Light/Dark appearance.
+- Persistent attachments with independent Photos/Files controls in one row, staged drafts, cached thumbnails, fullscreen image sharing/downward dismissal, confirmed swipe deletion and document Quick Look.
+- Fixed rounded status card with vertical solid-color actions and outside-tap dismissal.
+- Saved System/Light/Dark appearance and real color swatches; the default is the original lavender, with accent changes limited to the existing 0.2.0 control scope.
 - Optional custom HTTPS Chat Completions provider, Keychain API key, text/image recognition and mandatory editable confirmation. Ambiguous dates cannot be silently saved.
 - Versioned local backup/restore including attachments, integrity validation and preservation of existing assignments.
 
