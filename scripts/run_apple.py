@@ -85,7 +85,7 @@ def simulator(args):
         env = {"TEST_ORIENTATION": args.orientation}
         filters = {
             "all": [],
-            "preview": ["-only-testing:HomeworkAppUITests/InteractionPreviewTests"],
+            "preview": ["-only-testing:HomeworkAppUITests/InteractionPreviewTests/testCaptureAttachmentActions"],
             "interfaces": ["-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
                            "-only-testing:HomeworkAppUITests/PerformanceLayoutTests"],
             "ai": ["-only-testing:HomeworkAppUITests/AIImportFlowTests"],

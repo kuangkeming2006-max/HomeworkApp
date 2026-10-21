@@ -3,6 +3,69 @@ import XCTest
 /// A short runtime capture of the changed flow, not the broad regression suite.
 @MainActor
 final class InteractionPreviewTests: HomeworkUITestCase {
+    /// The full capture below remains available manually; this is the remaining changed flow.
+    func testCaptureAttachmentActions() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--fixture-design"]
+        app.launch()
+        let list = app.collectionViews["assignments.list"]
+        let thumbnail = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.thumbnail.'")).firstMatch
+        XCTAssertTrue(thumbnail.waitForExistence(timeout: 20))
+        app.buttons["navigation.settings"].tap()
+        XCTAssertTrue(app.buttons["settings.accent"].waitForExistence(timeout: 5))
+        app.buttons["settings.accent"].tap()
+        XCTAssertTrue(app.buttons["settings.accent.orange"].waitForExistence(timeout: 5))
+        app.buttons["settings.accent.orange"].tap()
+        app.navigationBars["Theme color"].buttons.element(boundBy: 0).tap()
+        app.buttons["navigation.assignments"].tap()
+        XCTAssertTrue(thumbnail.waitForExistence(timeout: 5))
+        thumbnail.tap()
+        let close = app.buttons["attachment.image.close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        let share = app.buttons["attachment.image.share"]
+        XCTAssertTrue(share.waitForExistence(timeout: 5))
+        XCTAssertTrue(share.isEnabled)
+        share.tap()
+        let sharePanel = app.descendants(matching: .any).matching(identifier: "ShareSheet.RemoteContainerView").firstMatch
+        XCTAssertTrue(sharePanel.waitForExistence(timeout: 10))
+        capture("Native image share panel")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)).tap()
+        XCTAssertTrue(sharePanel.waitForNonExistence(timeout: 5))
+        app.swipeDown()
+        XCTAssertTrue(close.waitForNonExistence(timeout: 5))
+
+        list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'")).firstMatch.tap()
+        let form = app.descendants(matching: .any).matching(identifier: "editor.form").firstMatch
+        XCTAssertTrue(form.waitForExistence(timeout: 5))
+        let photos = app.buttons["attachments.photos"]
+        let files = app.buttons["attachments.files"]
+        for _ in 0..<4 {
+            if files.exists && files.isHittable { break }
+            form.swipeUp()
+        }
+        let image = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.preview.'")).firstMatch
+        XCTAssertTrue(image.isHittable)
+        XCTAssertTrue(photos.exists); XCTAssertTrue(files.exists)
+        let photosFrame = photos.frame, filesFrame = files.frame
+        XCTAssertEqual(photosFrame.midY, filesFrame.midY, accuracy: 2)
+        XCTAssertLessThan(photosFrame.midX, filesFrame.midX)
+        capture("Large image and single import row")
+        app.cells.containing(.button, identifier: image.identifier).firstMatch.swipeLeft()
+        let delete = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.remove.'")).firstMatch
+        XCTAssertTrue(delete.waitForExistence(timeout: 5))
+        capture("Red attachment delete with orange accent")
+        delete.tap()
+        let remove = app.buttons["Remove attachment"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 5))
+        capture("Attachment removal confirmation")
+        if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() }
+        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap() }
+        XCTAssertTrue(remove.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(image.exists, "Canceling removal must keep the image")
+        capture("Canceled attachment removal")
+    }
+
     func testCaptureUpdatedIPhoneInteractions() {
         continueAfterFailure = false
         let app = XCUIApplication()
