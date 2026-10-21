@@ -26,6 +26,7 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(app.staticTexts["assignments.compactTitle"].waitForExistence(timeout: 5))
         capture("Completed category and compact heading")
         categories.buttons["Upcoming"].tap()
+        list.swipeDown()
         thumbnail.tap()
         XCTAssertTrue(app.buttons["attachment.image.close"].waitForExistence(timeout: 10))
         capture("Full screen image")
@@ -119,11 +120,11 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         firstRow.tap()
         let form = app.descendants(matching: .any).matching(identifier: "editor.form").firstMatch
         let image = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.preview.'")).firstMatch
-        for _ in 0..<7 where !image.isHittable { form.swipeUp() }
-        XCTAssertTrue(image.isHittable)
-        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.remove.'")).firstMatch.exists)
         let photos = app.buttons["attachments.photos"]
         let files = app.buttons["attachments.files"]
+        for _ in 0..<7 where !files.isHittable { form.swipeUp() }
+        XCTAssertTrue(image.isHittable)
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.remove.'")).firstMatch.exists)
         XCTAssertTrue(photos.exists); XCTAssertTrue(files.exists)
         XCTAssertEqual(photos.frame.midY, files.frame.midY, accuracy: 2)
         XCTAssertLessThan(photos.frame.midX, files.frame.midX)
