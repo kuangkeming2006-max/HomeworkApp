@@ -34,13 +34,11 @@ struct CalendarView: View {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) { model.rebuild(values, now: context.date) }
             }
         }
-        .modifier(WorkspacePageFade())
         .navigationTitle("Calendar")
+        .navigationBarTitleDisplayMode(.large)
         .environment(\.calendar, model.calendar)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                if let toolbar { WorkspaceToolbar(model: toolbar) }
-            }.sharedBackgroundVisibility(.hidden)
+            if let toolbar { WorkspaceToolbar(model: toolbar, mode: .calendar) }
         }
         .onChange(of: toolbar?.request) { _, request in
             guard let request, request.mode == .calendar else { return }
@@ -61,7 +59,7 @@ struct CalendarView: View {
         .sheet(isPresented: $selectingMonth) {
             MonthYearPicker(calendar: model.calendar, selected: model.month) { model.selectMonth($0) }
         }
-        .fullScreenCover(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
+        .sheet(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
         .attachmentPreview(preview)
     }
 

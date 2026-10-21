@@ -26,9 +26,6 @@ struct AppNavigation: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var systemTypeSize
     @State private var selection: AppSection? = .assignments
-    @State private var pageVisible = true
-    @State private var morphingWorkspace = false
-    @State private var pageTransition = UUID()
     @State private var workspaceToolbar = WorkspaceToolbarModel()
     @State private var requestedAssignment: AssignmentNavigationRequest?
     @State private var education = false
@@ -54,7 +51,6 @@ struct AppNavigation: View {
         .tint(container.preferences.accent.color)
         .environment(\.appAccent, container.preferences.accent.color)
         .environment(\.workspaceToolbar, workspaceToolbar)
-        .environment(\.workspacePageVisible, morphingWorkspace ? pageVisible : true)
         .preferredColorScheme(container.preferences.appearance.colorScheme)
         .environment(\.dynamicTypeSize, effectiveTypeSize)
         .environment(\.attachmentService, container.attachmentService)
@@ -63,7 +59,11 @@ struct AppNavigation: View {
             container.setForeground(phase == .active)
         }
         .onChange(of: selection) { _, section in
-            if let mode = toolbarMode(section), !workspaceToolbar.switching { workspaceToolbar.mode = mode }
+            if let mode = toolbarMode(section) {
+                withAnimation(reduceMotion ? nil : .bouncy(duration: 0.28, extraBounce: 0.08)) {
+                    workspaceToolbar.mode = mode
+                }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             container.refreshServices()
@@ -113,79 +113,16 @@ struct AppNavigation: View {
                 ForEach(AppSection.allCases) { section in
                     Tab(value: Optional(section)) {
                         destination(section, store: store)
-                            .toolbar(.hidden, for: .tabBar)
-                    } label: { Label(section.rawValue, systemImage: section.symbol) }
-                }
-            }
-            .toolbar(.hidden, for: .tabBar)
-            .opacity(morphingWorkspace || pageVisible ? 1 : 0)
-            .allowsHitTesting(pageVisible)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                equalWidthTabBar.overlay(alignment: .bottom) {
-                    snackbar(store).padding(.bottom, 70)
-                }
-            }
-        }
-    }
-
-    private var equalWidthTabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(AppSection.allCases) { section in
-                Button {
-                    selectSection(section)
-                } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: section.symbol).font(.system(size: 21, weight: .semibold))
-                        Text(section.rawValue).font(.caption2.weight(.semibold))
-                            .lineLimit(1).minimumScaleFactor(0.65)
+                    } label: {
+                        Label(section.rawValue, systemImage: section.symbol)
+                            .accessibilityIdentifier(section.identifier)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 54)
-                    .foregroundStyle(selection == section ? container.preferences.accent.color : Color.secondary)
-                    .background {
-                        if selection == section {
-                            Capsule().fill(Color.primary.opacity(0.08)).padding(3)
-                        }
-                    }
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier(section.identifier)
-                .accessibilityAddTraits(selection == section ? [.isSelected] : [])
             }
-        }
-        .padding(4)
-        .glassEffect(.regular, in: .capsule)
-        .padding(.horizontal, 16).padding(.bottom, 4)
-        .accessibilityElement(children: .contain)
-    }
-
-    private func selectSection(_ section: AppSection) {
-        guard selection != section || !pageVisible else { return }
-        AppHaptics.selection()
-        let token = UUID()
-        pageTransition = token
-        guard !reduceMotion else {
-            if let mode = toolbarMode(section) { workspaceToolbar.mode = mode }
-            selection = section; pageVisible = true; workspaceToolbar.switching = false; return
-        }
-        let morphsToolbar = toolbarMode(selection) != nil && toolbarMode(section) != nil
-        morphingWorkspace = morphsToolbar
-        workspaceToolbar.switching = true
-        let finish = {
-            guard pageTransition == token else { return }
-            selection = section
-            workspaceToolbar.switching = false
-            withAnimation(.easeInOut(duration: 0.18)) { pageVisible = true }
-        }
-        if morphsToolbar, let mode = toolbarMode(section) {
-            withAnimation(.easeInOut(duration: 0.18)) { pageVisible = false }
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.72), completionCriteria: .logicallyComplete) {
-                workspaceToolbar.mode = mode
-            } completion: { finish() }
-        } else {
-            withAnimation(.easeInOut(duration: 0.18), completionCriteria: .logicallyComplete) {
-                pageVisible = false
-            } completion: { finish() }
+            .tabBarMinimizeBehavior(.never)
+            .modifier(UndoTabAccessory(coordinator: store.undo) {
+                withAnimation(reduceMotion ? nil : .smooth(duration: 0.24)) { store.undoLatest() }
+            })
         }
     }
 
@@ -209,12 +146,11 @@ struct AppNavigation: View {
         switch section {
         case .assignments: AssignmentWorkspace(store: store, request: requestedAssignment)
         case .calendar: NavigationStack { CalendarView(store: store) }
-        case .briefing: NavigationStack { BriefingView(store: store, history: container.briefingHistory).modifier(WorkspacePageFade()) }
+        case .briefing: NavigationStack { BriefingView(store: store, history: container.briefingHistory) }
         case .settings: NavigationStack {
             SettingsView(version: container.version, preferences: container.preferences,
                          notifications: container.notifications, store: store, backupService: container.backupService,
                          secrets: container.secrets, buildProvider: container.providerBuilder, liveActivities: container.liveActivities)
-                .modifier(WorkspacePageFade())
         }
         }
       }
@@ -224,9 +160,6 @@ struct AppNavigation: View {
     }
 
     private func open(_ route: HomeworkRoute) {
-        pageTransition = UUID()
-        pageVisible = true
-        workspaceToolbar.switching = false
         switch route {
         case .assignment(let id): selection = .assignments; requestedAssignment = .init(assignmentID: id)
         case .briefing: selection = .briefing

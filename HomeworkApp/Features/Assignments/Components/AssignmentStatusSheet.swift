@@ -8,27 +8,17 @@ struct AssignmentStatusSheet: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Color.black.opacity(0.28)
-                .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onTapGesture { dismiss() }
-                .accessibilityHidden(true)
-
-            card
-                .frame(maxWidth: 560)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-        .presentationBackground(.clear)
-        .interactiveDismissDisabled()
+        card
+        .presentationDetents([.custom(AssignmentActionDetent.self)])
+        .presentationDragIndicator(.hidden)
+        .presentationCornerRadius(30)
+        .background(SheetOutsideTapDismissal { dismiss() }.frame(width: 0, height: 0))
         .accessibilityAction(.escape) { dismiss() }
     }
 
     private var card: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text(assignment.title).font(.headline).lineLimit(2)
+        VStack(alignment: .leading, spacing: 20) {
+            Text(assignment.title).font(.title3.weight(.semibold)).lineLimit(2)
             VStack(spacing: 12) {
                 if assignment.status == .active {
                     action("Complete", symbol: "checkmark", color: Color(red: 0.10, green: 0.55, blue: 0.25)) {
@@ -45,14 +35,10 @@ struct AssignmentStatusSheet: View {
                 }
             }
         }
-        .padding(20)
+        .padding(24)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 28))
-        .contentShape(RoundedRectangle(cornerRadius: 28))
-        // The card consumes taps in its title and padding; only the surrounding
-        // backdrop dismisses. Descendant buttons retain their own actions.
-        .onTapGesture {}
         .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("assignment.status.sheet")
     }
 
     private func action(_ title: String, symbol: String, color: Color, perform: @escaping () -> Void) -> some View {
@@ -64,12 +50,18 @@ struct AssignmentStatusSheet: View {
                 Image(systemName: symbol).font(.title3.weight(.semibold))
                 Text(title).font(.headline).lineLimit(2)
             }
-            .frame(maxWidth: .infinity, minHeight: 56)
-            .foregroundStyle(.white)
-            .background(color, in: RoundedRectangle(cornerRadius: 14))
-            .contentShape(Rectangle())
+            .frame(maxWidth: .infinity, minHeight: 36)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.roundedRectangle(radius: 16))
+        .controlSize(.large)
+        .tint(color)
         .accessibilityIdentifier("assignment.status.\(title.lowercased())")
+    }
+}
+
+private struct AssignmentActionDetent: CustomPresentationDetent {
+    static func height(in context: Context) -> CGFloat? {
+        min(context.maxDetentValue, context.dynamicTypeSize.isAccessibilitySize ? 420 : 280)
     }
 }

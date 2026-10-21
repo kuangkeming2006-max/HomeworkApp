@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import subprocess
 
-from simulators import select_device
+from simulators import runtime_version, select_device
 from project_metadata import project_name
 from screenshots import png_dimensions
 from validate_bundle import validate_app_bundle
@@ -70,7 +70,28 @@ def simulator(args):
         run(["xcodebuild", "-showsdks"], "sdks.log")
         run(["xcrun", "simctl", "list", "--json"], "simulator-inventory.json")
         run(["xcrun", "simctl", "list", "devices", "available", "--json"], "simulators.json")
-        selected = select_device(json.loads((ARTIFACTS / "simulators.json").read_text()), args.family, args.runtime)
+        inventory = json.loads((ARTIFACTS / "simulators.json").read_text())
+        if args.device_name:
+            available = [d for runtime, devices in inventory.get("devices", {}).items()
+                         if runtime_version(runtime) and runtime_version(runtime)[0] == args.runtime for d in devices
+                         if d.get("isAvailable") and d.get("name") == args.device_name]
+            if not available:
+                full = json.loads((ARTIFACTS / "simulator-inventory.json").read_text())
+                device_type = next((d for d in full.get("devicetypes", []) if d["name"] == args.device_name), None)
+                if device_type is None:
+                    raise RuntimeError(f"Device type {args.device_name} is not installed; inspect simulator-inventory.json")
+                runtimes = [r for r in full.get("runtimes", [])
+                            if r.get("isAvailable") and runtime_version(r["identifier"])
+                            and runtime_version(r["identifier"])[0] == args.runtime
+                            and any(d["identifier"] == device_type["identifier"] for d in r.get("supportedDeviceTypes", []))]
+                if not runtimes:
+                    raise RuntimeError(f"Cannot create {args.device_name} on iOS {args.runtime}; inspect simulator-inventory.json")
+                runtime = max(runtimes, key=lambda r: runtime_version(r["identifier"]))
+                run(["xcrun", "simctl", "create", args.device_name, device_type["identifier"], runtime["identifier"]],
+                    "create-device.log")
+                run(["xcrun", "simctl", "list", "devices", "available", "--json"], "simulators.json")
+                inventory = json.loads((ARTIFACTS / "simulators.json").read_text())
+        selected = select_device(inventory, args.family, args.runtime, args.device_name)
         selected.update({"appearance": args.appearance, "orientation": args.orientation,
                          "testScope": args.test_scope,
                          "commit": os.environ.get("GITHUB_SHA"), "runner": os.environ.get("RUNNER_NAME"),
@@ -85,7 +106,7 @@ def simulator(args):
         env = {"TEST_ORIENTATION": args.orientation}
         filters = {
             "all": [],
-            "preview": ["-only-testing:HomeworkAppUITests/InteractionPreviewTests/testCaptureAttachmentActions"],
+            "preview": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests"],
             "interfaces": ["-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
                            "-only-testing:HomeworkAppUITests/PerformanceLayoutTests"],
             "ai": ["-only-testing:HomeworkAppUITests/AIImportFlowTests"],
@@ -139,6 +160,7 @@ def main():
     parser.add_argument("--appearance", choices=["light", "dark"], default="light")
     parser.add_argument("--orientation", choices=["portrait", "landscape"], default="portrait")
     parser.add_argument("--runtime", type=int, default=27)
+    parser.add_argument("--device-name", help="Exact simulator model; create it on the selected installed runtime when needed")
     parser.add_argument("--test-scope", choices=["all", "preview", "interfaces", "ai"], default="all")
     args = parser.parse_args()
     ARTIFACTS.mkdir(exist_ok=True)

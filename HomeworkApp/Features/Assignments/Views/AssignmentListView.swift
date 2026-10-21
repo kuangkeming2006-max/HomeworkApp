@@ -11,41 +11,30 @@ struct AssignmentListView: View {
     @State private var search = ""
     @State private var actionTarget: Assignment?
     @State private var projection = AssignmentListProjection()
-    @State private var collapsedTitle = false
     @State private var preview = AttachmentPreviewModel()
     @State private var category: AssignmentStatus = .active
     @State private var sectionHeaderPositions: [AssignmentStatus: CGFloat] = [:]
     @State private var listOriginY: CGFloat?
     @State private var listTopInset: CGFloat = 0
-    @State private var listViewportHeight: CGFloat = 0
+    @State private var requestedCategory: AssignmentStatus?
+    @State private var hasUserScrolled = false
+    @State private var atBottom = false
+    @State private var atTop = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
     @Environment(\.attachmentService) private var attachmentService
     @Environment(\.workspaceToolbar) private var toolbar
 
     private struct ListScrollMetrics: Equatable {
-        let collapsedTitle: Bool
         let topInset: CGFloat
+        let atTop: Bool
+        let atBottom: Bool
     }
 
     var body: some View {
         ScrollViewReader { proxy in
-          VStack(spacing: 0) {
-            Picker("Category", selection: Binding(get: { category }, set: { next in
-                category = next
-                if let first = projection.sections.first(where: { $0.id == next })?.rows.first {
-                    proxy.scrollTo(first.id, anchor: .top)
-                } else { proxy.scrollTo(next, anchor: .top) }
-            })) {
-                ForEach(AssignmentStatus.allCases) { Text($0.categoryTitle).tag($0) }
-            }
-            .pickerStyle(.segmented).padding(.horizontal).padding(.vertical, 8)
-            .accessibilityIdentifier("assignments.filter")
             TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
             List {
-                Text("Assignments").font(.largeTitle.bold())
-                    .listRowSeparator(.hidden).listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 8, trailing: 16))
-                    .accessibilityAddTraits(.isHeader)
                 ForEach(projection.sections) { section in
                     Section {
                         if section.rows.isEmpty {
@@ -73,17 +62,16 @@ struct AssignmentListView: View {
                                 updateCategoryForScroll()
                             }
                             .onDisappear {
-                                if sectionHeaderPositions.removeValue(forKey: section.id) != nil { updateCategoryForScroll() }
+                                sectionHeaderPositions.removeValue(forKey: section.id)
                             }
                     }
                 }
             }
             .listStyle(.plain)
-            // Let even the final short section reach the top when its category is chosen.
-            .contentMargins(.bottom, max(0, listViewportHeight - 120), for: .scrollContent)
+            .contentMargins(.bottom, 16, for: .scrollContent)
             .accessibilityIdentifier("assignments.list")
-            .onGeometryChange(for: CGFloat.self) { $0.size.height.rounded(.down) } action: { height in
-                if listViewportHeight != height { listViewportHeight = height }
+            .safeAreaInset(edge: .top, spacing: 0) {
+                categoryPicker(proxy: proxy)
             }
             .onGeometryChange(for: CGFloat.self) { geometry in
                 geometry.frame(in: .global).minY.rounded(.down)
@@ -93,22 +81,28 @@ struct AssignmentListView: View {
                 updateCategoryForScroll()
             }
             .onScrollGeometryChange(for: ListScrollMetrics.self) { geometry in
-                ListScrollMetrics(collapsedTitle: geometry.contentOffset.y + geometry.contentInsets.top > 38,
-                                  topInset: geometry.contentInsets.top)
+                ListScrollMetrics(topInset: geometry.contentInsets.top,
+                                  atTop: geometry.contentOffset.y + geometry.contentInsets.top <= 1,
+                                  atBottom: geometry.contentOffset.y + geometry.containerSize.height
+                                    >= geometry.contentSize.height + geometry.contentInsets.bottom - 1)
             } action: { _, metrics in
-                if collapsedTitle != metrics.collapsedTitle {
-                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) { collapsedTitle = metrics.collapsedTitle }
-                }
+                atTop = metrics.atTop
+                atBottom = metrics.atBottom
                 if listTopInset != metrics.topInset {
                     listTopInset = metrics.topInset
                     updateCategoryForScroll()
                 }
+                if hasUserScrolled { updateCategoryForScroll() }
+            }
+            .onScrollPhaseChange { _, phase in
+                // A category jump owns selection until the next deliberate scroll.
+                // Intermediate header callbacks must not undo the user's choice.
+                if phase == .interacting { hasUserScrolled = true; requestedCategory = nil }
+                if phase == .idle, requestedCategory == nil { updateCategoryForScroll() }
             }
           }
-          }
-          .modifier(WorkspacePageFade())
         }
-        .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search title, course or notes")
+        .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search title, course or notes")
         .onChange(of: store.assignments, initial: true) { _, values in
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.28)) {
                 projection.rebuild(values, sort: sort, search: search)
@@ -130,22 +124,12 @@ struct AssignmentListView: View {
             case .today: break
             }
         }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Assignments")
+        .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                if collapsedTitle {
-                    Text("Assignments").font(.headline).fixedSize(horizontal: true, vertical: false).allowsHitTesting(false)
-                        .accessibilityIdentifier("assignments.compactTitle")
-                }
-            }
-            .sharedBackgroundVisibility(.hidden)
-            ToolbarItem(placement: .topBarTrailing) {
-                if let toolbar { WorkspaceToolbar(model: toolbar) }
-            }
-            .sharedBackgroundVisibility(.hidden)
+            if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) }
         }
-        .fullScreenCover(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
+        .sheet(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
         .confirmationDialog("Sort by", isPresented: $choosingSort, titleVisibility: .visible) {
             ForEach(AssignmentSort.allCases) { option in
                 Button(option.rawValue) {
@@ -162,8 +146,29 @@ struct AssignmentListView: View {
         }
     }
 
+    private func categoryPicker(proxy: ScrollViewProxy) -> some View {
+        Picker("Category", selection: Binding(get: { category }, set: { next in
+            requestedCategory = next
+            category = next
+            // Native list scrolling clamps short terminal sections naturally.
+            // No viewport-sized spacer is inserted below the actual content.
+            if let first = projection.sections.first(where: { $0.id == next })?.rows.first {
+                proxy.scrollTo(first.id, anchor: .top)
+            } else { proxy.scrollTo(next, anchor: .top) }
+        })) {
+            ForEach(AssignmentStatus.allCases) { Text($0.categoryTitle).tag($0) }
+        }
+        .pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 8)
+        .background(.bar)
+        .accessibilityIdentifier("assignments.filter")
+    }
+
     private func updateCategoryForScroll() {
-        guard let listOriginY else { return }
+        guard requestedCategory == nil, let listOriginY else { return }
+        if hasUserScrolled && atBottom && !atTop {
+            if category != .abandoned { category = .abandoned }
+            return
+        }
         let visibleTop = listOriginY + listTopInset
         let pastTop = AssignmentStatus.allCases.last { status in
             guard let position = sectionHeaderPositions[status] else { return false }

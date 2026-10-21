@@ -2,6 +2,7 @@ import SwiftUI
 
 struct UndoSnackbar: View {
     let coordinator: UndoCoordinator
+    var systemAccessory = false
     let undo: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var displayedAction: UndoCoordinator.Action?
@@ -26,9 +27,14 @@ struct UndoSnackbar: View {
                 Button("Undo", action: undo).fontWeight(.semibold).accessibilityIdentifier("assignments.undo")
                     .disabled(coordinator.latest?.id != action.id)
             }
-            .padding().glassEffect(.regular, in: RoundedRectangle(cornerRadius: 14))
+            .padding(.horizontal, 16).padding(.vertical, systemAccessory ? 10 : 16)
+            .background {
+                if !systemAccessory {
+                    RoundedRectangle(cornerRadius: 18).fill(.regularMaterial)
+                }
+            }
             .frame(maxWidth: 600)
-            .padding(.horizontal).padding(.bottom, 6)
+            .padding(.horizontal, systemAccessory ? 0 : 16)
             .accessibilityElement(children: .contain)
             .opacity(visible ? 1 : 0)
             .offset(y: visible || reduceMotion ? 0 : 28)
@@ -56,6 +62,29 @@ struct UndoSnackbar: View {
             } completion: {
                 guard generation == token else { return }
                 displayedAction = nil
+            }
+        }
+    }
+}
+
+/// The system positions this directly against the real tab bar and manages the
+/// scrollable safe area. No hard-coded tab-bar height or second glass is needed.
+struct UndoTabAccessory: ViewModifier {
+    let coordinator: UndoCoordinator
+    let undo: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.1, *) {
+            content
+                .tabViewBottomAccessory(isEnabled: coordinator.latest != nil) {
+                    UndoSnackbar(coordinator: coordinator, systemAccessory: true, undo: undo)
+                }
+                .animation(reduceMotion ? nil : .smooth(duration: 0.24), value: coordinator.latest != nil)
+        } else {
+            content.safeAreaInset(edge: .bottom, spacing: 0) {
+                UndoSnackbar(coordinator: coordinator, undo: undo)
             }
         }
     }
