@@ -2,7 +2,7 @@
 
 ## Assignments and calendar
 
-Use **+** for manual creation or **Add with AI** for assisted import. Scroll vertically through Upcoming, Completed and Abandoned sections in one list. Search matches title, course and notes across the sections. Priority sorting orders P1 through P4, then deadlines, creation time and UUID. The Sort control opens a native dialog with Priority and Deadline choices. Scrolling replaces the large Assignments heading with a compact title at the top left.
+Use **+** for manual creation or **Add with AI** for assisted import. Scroll vertically through Upcoming, Completed and Abandoned sections in one list. Pull down to reveal search, which matches title, course and notes across the sections. Priority sorting orders P1 through P4, then deadlines, creation time and UUID. The Sort control opens a native dialog with Priority and Deadline choices. Assignments uses the standard large navigation heading, which collapses as you scroll.
 
 Use the Upcoming, Completed and Abandoned category controls to jump to their vertical sections. Each section has a fixed blue, green or gray marker; All is removed. Tap the circle for a fixed rounded bottom card with vertical solid-color actions: Complete and Abandon for upcoming work, Restore and Delete for finished work. Tap outside to dismiss. The circle provides a light haptic; successful completion uses the system success haptic. A full swipe right completes/restores; a full swipe left deletes. A shorter left swipe reveals Abandon and Delete. The bottom Undo bar lasts five seconds, updates its countdown once per second, and animates both entry and exit, including automatic expiry. Undo restores status/timestamps without reverting newer content edits. Abandoned tasks have no deadline reminders. Deletion retains an internal tombstone for future sync.
 
@@ -22,7 +22,7 @@ Photos and Files share one row during creation and editing: tap the left half fo
 
 ## Appearance
 
-The four iPhone navigation buttons have equal widths and native Liquid Glass. Page content switches with a plain crossfade. The Assignments/Calendar action strip morphs separately with a spring; the compact leading Assignments title has no button/glass background. Settings → Appearance offers System, Light and Dark, plus seven color swatches. Purple defaults to the original 0.2.0 lavender. Theme changes replace the original accent-colored controls only; destructive actions and new status/category/share controls keep their standard colors. Both appearance choices are saved on the device.
+The four iPhone destinations use the system Liquid Glass tab bar. Page changes and toolbar controls use native transitions, without a fade-to-blank delay. Undo appears in the system accessory immediately above the tab bar; content remains scrollable clear of both. Settings → Appearance offers System, Light and Dark, plus seven color swatches. Purple defaults to the original 0.2.0 lavender. Theme changes replace the original accent-colored controls only; destructive actions and new status/category/share controls keep their standard colors. Both appearance choices are saved on the device.
 
 ## Live Activities and Briefing
 

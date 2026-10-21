@@ -1,6 +1,20 @@
 # Redesign status — iPhone delivery
 
-## Current development — 0.2.2 / build 4
+## Current development — 0.2.3 / build 5
+
+Branch: feature/iphone-interactions-theme; [draft PR #1](https://github.com/kuangkeming2006-max/HomeworkApp/pull/1). Current source: 104a2ea.
+
+This revision responds to the observed layout regressions in 0.2.2. It restores the visible system TabView bar and native toolbar buttons, removes the custom footer and completion-driven fade-to-blank delay, uses native large navigation headings and automatic pull-to-search, and removes the viewport-sized empty list tail. Category jumps retain their selection until deliberate scrolling. Status actions use a native single-detent sheet, and Undo uses the system tab accessory instead of a fixed 70-point overlay offset. [Design references and implementation](NATIVE_IPHONE_LAYOUT.md).
+
+The [first iPhone 15 Pro preview](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39638856352) passed the device build and simulator compilation. Its native-actions capture passed in 45.751 seconds, including native sheet presentation, outside dismissal, completion/Undo and editor scrolling. The navigation capture passed both Abandoned/Upcoming returns and last-row visibility, then failed at a scripted tab identifier lookup: the real system tabs expose their English labels rather than the identifier applied to the SwiftUI Label. Screenshots also exposed a real large-title occlusion: the category bar material extended into the top safe area. Source b739b8a confines that background to the category rail, preserves the title, and targets the observed system tab labels. No old assertion is removed.
+
+The [second focused preview](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39640858256), on b739b8a, passed both builds and both capture flows (native actions 127.216 seconds, navigation 49.251 seconds), producing 14 screenshots without reported runtime warnings. Actual images confirm native glass, matching Assignments/Calendar title positions, pull-to-search, compact title, all four pages and reachable editor controls. Manual inspection also found a defect the green assertions missed: after jumping to Upcoming, its pinned section heading could cover the first line of the first assignment. Source 104a2ea replaces pinned headings with ordinary colored separator rows and scrolls directly to those rows; it adds a first-row/separator frame assertion while preserving the earlier checks.
+
+The [final focused preview](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39644498739), on 104a2ea, **passed the unsigned arm64 iPhoneOS build and both actual iPhone 15 Pro / iOS 27 screenshot flows**. Native actions passed in 42.051 seconds and navigation in 41.790 seconds, with 14 retained PNGs and no reported runtime warnings. All 14 images were inspected: the first assignment is fully visible after both returns to Upcoming; titles align, search is hidden until pulled down, the compact title is ordinary leading text, native sheets use vertical standard-color actions, Undo is next to the real tab bar and the editor's final controls remain reachable. The original category-selection and last-row checks plus the new first-row/separator frame assertion all pass.
+
+Both unsigned 0.2.3/build-5 IPA variants, SHA-256 values, exact source/run metadata, the actual runtime summary and a named screenshot index are saved in the local outputs/Builds/v0.2.3 handoff. Package identity/version, extension variants and absence of provisioning/signatures were checked. These are two focused capture flows, not the broad regression suite; physical installation and frame rate remain unverified.
+
+## Previous development — 0.2.2 / build 4
 
 Branch: `feature/iphone-interactions-theme`; [draft PR #1](https://github.com/kuangkeming2006-max/HomeworkApp/pull/1). Application source: `87af479`; current capture/script source: `f3355f2`.
 
