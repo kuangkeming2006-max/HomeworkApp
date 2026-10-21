@@ -22,7 +22,6 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         XCTAssertFalse(categories.buttons["All"].exists)
         capture("Three categories and colored sections")
         categories.buttons["Completed"].tap()
-        list.swipeUp()
         XCTAssertTrue(app.staticTexts["assignments.compactTitle"].waitForExistence(timeout: 5))
         capture("Completed category and compact heading")
         categories.buttons["Upcoming"].tap()

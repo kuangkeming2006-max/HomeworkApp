@@ -17,6 +17,7 @@ struct AssignmentListView: View {
     @State private var sectionHeaderPositions: [AssignmentStatus: CGFloat] = [:]
     @State private var listOriginY: CGFloat?
     @State private var listTopInset: CGFloat = 0
+    @State private var listViewportHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
     @Environment(\.attachmentService) private var attachmentService
@@ -78,7 +79,12 @@ struct AssignmentListView: View {
                 }
             }
             .listStyle(.plain)
+            // Let even the final short section reach the top when its category is chosen.
+            .contentMargins(.bottom, max(0, listViewportHeight - 120), for: .scrollContent)
             .accessibilityIdentifier("assignments.list")
+            .onGeometryChange(for: CGFloat.self) { $0.size.height.rounded(.down) } action: { height in
+                if listViewportHeight != height { listViewportHeight = height }
+            }
             .onGeometryChange(for: CGFloat.self) { geometry in
                 geometry.frame(in: .global).minY.rounded(.down)
             } action: { position in
@@ -129,7 +135,7 @@ struct AssignmentListView: View {
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if collapsedTitle {
-                    Text("Assignments").font(.headline).allowsHitTesting(false)
+                    Text("Assignments").font(.headline).fixedSize(horizontal: true, vertical: false).allowsHitTesting(false)
                         .accessibilityIdentifier("assignments.compactTitle")
                 }
             }
