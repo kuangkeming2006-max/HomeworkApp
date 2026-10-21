@@ -60,7 +60,7 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(remove.waitForExistence(timeout: 5))
         capture("Attachment removal confirmation")
         if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() }
-        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).tap() }
+        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
         XCTAssertTrue(remove.waitForNonExistence(timeout: 5))
         XCTAssertTrue(image.exists, "Canceling removal must keep the image")
         capture("Canceled attachment removal")
