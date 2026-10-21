@@ -158,9 +158,9 @@ struct AssignmentListView: View {
         })) {
             ForEach(AssignmentStatus.allCases) { Text($0.categoryTitle).tag($0) }
         }
-        .pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 8)
-        .background(.bar)
         .accessibilityIdentifier("assignments.filter")
+        .pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 8)
+        .background(.bar, ignoresSafeAreaEdges: [])
     }
 
     private func updateCategoryForScroll() {

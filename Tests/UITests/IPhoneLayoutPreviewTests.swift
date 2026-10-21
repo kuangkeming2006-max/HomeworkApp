@@ -14,7 +14,9 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertEqual(tabs.buttons.count, 4)
         let categories = app.segmentedControls["assignments.filter"]
         XCTAssertTrue(categories.waitForExistence(timeout: 5))
-        let assignmentTitleY = app.navigationBars["Assignments"].staticTexts["Assignments"].frame.minY
+        let assignmentTitle = app.navigationBars["Assignments"].staticTexts["Assignments"]
+        XCTAssertTrue(assignmentTitle.isHittable)
+        let assignmentTitleY = assignmentTitle.frame.minY
         capture("Assignments — native glass and aligned title")
         recordFrames(app: app, tabs: tabs, categories: categories)
 
@@ -37,16 +39,16 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         list.swipeUp()
         capture("Assignments — native compact heading")
 
-        tabs.buttons["navigation.calendar"].tap()
+        tabs.buttons["Calendar"].tap()
         let calendarTitle = app.navigationBars["Calendar"].staticTexts["Calendar"]
         XCTAssertTrue(calendarTitle.waitForExistence(timeout: 5))
         XCTAssertEqual(calendarTitle.frame.minY, assignmentTitleY, accuracy: 2)
         XCTAssertTrue(app.buttons["calendar.add"].isHittable)
         capture("Calendar — native toolbar and bottom safe area")
-        tabs.buttons["navigation.briefing"].tap()
+        tabs.buttons["Briefing"].tap()
         XCTAssertTrue(app.navigationBars["Briefing"].waitForExistence(timeout: 5))
         capture("Briefing — native title and tabs")
-        tabs.buttons["navigation.settings"].tap()
+        tabs.buttons["Settings"].tap()
         XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
         capture("Settings — native title and tabs")
     }
