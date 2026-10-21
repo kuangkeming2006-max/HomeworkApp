@@ -4,12 +4,13 @@ Native SwiftUI homework deadline manager for iPhone and iPad. Development happen
 
 ## Features
 
-- Offline SwiftData assignments with active/completed/abandoned states, guarded Undo, category search, automatic editing and priority/deadline sorting. V1 records/backups are preserved through V2 migration.
-- Indexed month calendar with distinct status dots, direct month/year selection and creation for the selected day; adaptive tabs, sidebar and list/detail panes.
+- Offline SwiftData assignments in vertically stacked status sections, full-swipe actions, success haptics, animated guarded Undo, search and priority/deadline sorting. V1 records/backups are preserved through V2 migration.
+- Indexed month calendar with finger-following translation, distinct status dots, direct month/year selection and fading day details; equal-width iPhone navigation and retained sidebar support.
 - Independent reminders, notification actions/deep links, incremental scheduling and a shared pending-request budget.
 - Local scheduled Live Activities with compact/minimal/expanded/Lock Screen layouts and an ordinary-notification fallback; no server/APNs requirement.
 - Offline Briefing with daily workload/progress, observed history and optional finite scheduled reports.
-- Persistent Photos/Files attachments, creation-time staging/cancellation, resized cached thumbnails and Quick Look.
+- Persistent Photos/Files attachments, staged drafts, cached thumbnails, fullscreen images with downward dismissal and document Quick Look.
+- Saved theme colors and System/Light/Dark appearance.
 - Optional custom HTTPS Chat Completions provider, Keychain API key, text/image recognition and mandatory editable confirmation. Ambiguous dates cannot be silently saved.
 - Versioned local backup/restore including attachments, integrity validation and preservation of existing assignments.
 
@@ -21,15 +22,15 @@ Based on [hoangnd107/ios-swiftui-app-template](https://github.com/hoangnd107/ios
 
 1. Clone this repository and open it in VS Code. No Xcode, paid Apple membership or server is needed locally.
 2. Edit Swift sources and `project.yml`. The generated `.xcodeproj` stays out of Git.
-3. Run `python -m unittest discover -s scripts/tests -v`. With Swift 6 installed, also run `swift test --package-path Packages/HomeworkDomain`.
-4. Commit and push. The **Apple build and screenshots** workflow runs portable tests, Apple tests and an unsigned device build.
+3. Review the affected source and follow `AGENTS.md`; broader automated suites are optional when explicitly requested.
+4. Commit and push. The **iPhone build and interaction preview** workflow builds the app, runs one short iPhone capture flow and separately packages an unsigned device build.
 5. Use `gh run list`, `gh run view RUN_ID --log-failed`, then `gh run download RUN_ID --dir artifacts/RUN_ID`. Fix actual compiler/test errors and inspect actual screenshots before marking UI acceptance complete.
 
 `python scripts/inspect_ci.py` shows the latest run; add `--run RUN_ID --download` after completion to save run metadata, raw Actions logs, test summary JSON and all artifacts together. It performs no retries or source changes.
 
 The workflow discovers stable Xcode 27 and available iOS 27 simulator UDIDs. Missing SDKs/runtimes cause explicit failures, with available discovery output uploaded. It never silently switches to an older toolchain.
 
-Manual workflow dispatch supports `coverage=iphone` (iPhone portrait in Light/Dark) for the current iPhone-first delivery, and `coverage=focused` (iPhone portrait + iPad landscape) for incremental debugging. All hosted/UI tests run in either mode unless a narrower test scope is explicitly selected; pushes and default dispatch retain the full six-configuration matrix. `SDK capability probe` records actual ActivityKit declarations and typechecks modern scheduled starts at the iOS 26 minimum.
+The broader **Apple build and screenshots** workflow is manual. Its dispatch supports `coverage=iphone` (iPhone portrait in Light/Dark), `coverage=focused` (iPhone portrait + iPad landscape), and the full six-configuration matrix. These scopes run the hosted/UI suites unless a narrower scope is selected. Historical category-navigation assertions must be adapted to the new vertical-section interaction before using that suite for acceptance. `SDK capability probe` records actual ActivityKit declarations and typechecks modern scheduled starts at the iOS 26 minimum.
 
 For a short attachment/accessibility investigation, dispatch with `coverage=focused` and `tests=interfaces`. This runs only the native picker/preview and large-text/scrolling UI classes, and records that scope in device metadata. Coverage and test scopes have separate concurrency groups so diagnostics can finish independently. It is a debugging aid, not final acceptance: retain `tests=all` for the complete hosted/UI regression. Use `coverage=iphone` for iPhone release verification; choose `coverage=full` when validating the complete iPad appearance/orientation matrix as well.
 
@@ -37,6 +38,7 @@ Use `tests=ai` to investigate only the synthetic AI preview/confirmation flow. I
 
 ## Outputs
 
+- `iphone-interaction-preview`: the current focused iPhone build/launch, screenshots, result bundle, simulator/SDK metadata and diagnostics.
 - `domain-linux-*`: raw portable Swift test output.
 - `simulator-<family>-<appearance>-<orientation>-*`: raw `xcodebuild.log`, warnings, `.xcresult`, PNG attachments, selected device/SDK metadata and available app crash logs.
 - `review-<family>-<appearance>-<orientation>-*`: compact build/errors/performance logs, test summary, device metadata, screenshot manifest, accessibility trees and PNGs. Failing UI tests explicitly retain a screenshot/tree. App logs/crashes remain in the full artifact; whole-system XCTest diagnostic collection is disabled because it previously stalled for 600 seconds.

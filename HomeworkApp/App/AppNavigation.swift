@@ -26,6 +26,8 @@ struct AppNavigation: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var systemTypeSize
     @State private var selection: AppSection? = .assignments
+    @State private var pageVisible = true
+    @State private var pageTransition = UUID()
     @State private var requestedAssignment: AssignmentNavigationRequest?
     @State private var education = false
     let container: AppContainer
@@ -100,17 +102,18 @@ struct AppNavigation: View {
             }
             .safeAreaInset(edge: .bottom) { snackbar(store) }
         } else {
-            ZStack {
+            TabView(selection: $selection) {
                 ForEach(AppSection.allCases) { section in
-                    destination(section, store: store)
-                        .opacity(selection == section ? 1 : 0)
-                        .offset(y: reduceMotion || selection == section ? 0 : 10)
-                        .allowsHitTesting(selection == section)
-                        .accessibilityHidden(selection != section)
-                        .zIndex(selection == section ? 1 : 0)
+                    Tab(value: Optional(section)) {
+                        destination(section, store: store)
+                            .toolbar(.hidden, for: .tabBar)
+                    } label: { Label(section.rawValue, systemImage: section.symbol) }
                 }
             }
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.24), value: selection)
+            .toolbar(.hidden, for: .tabBar)
+            .opacity(pageVisible ? 1 : 0)
+            .offset(y: reduceMotion || pageVisible ? 0 : 8)
+            .allowsHitTesting(pageVisible)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 VStack(spacing: 6) {
                     snackbar(store)
@@ -124,9 +127,7 @@ struct AppNavigation: View {
         HStack(spacing: 0) {
             ForEach(AppSection.allCases) { section in
                 Button {
-                    guard selection != section else { return }
-                    AppHaptics.selection()
-                    selection = section
+                    selectSection(section)
                 } label: {
                     VStack(spacing: 4) {
                         Image(systemName: section.symbol).font(.system(size: 21, weight: .semibold))
@@ -152,6 +153,21 @@ struct AppNavigation: View {
         .overlay { RoundedRectangle(cornerRadius: 24).stroke(.primary.opacity(0.08), lineWidth: 0.5) }
         .padding(.horizontal, 16).padding(.bottom, 4)
         .accessibilityElement(children: .contain)
+    }
+
+    private func selectSection(_ section: AppSection) {
+        guard selection != section || !pageVisible else { return }
+        AppHaptics.selection()
+        let token = UUID()
+        pageTransition = token
+        guard !reduceMotion else { selection = section; pageVisible = true; return }
+        withAnimation(.easeInOut(duration: 0.12), completionCriteria: .logicallyComplete) {
+            pageVisible = false
+        } completion: {
+            guard pageTransition == token else { return }
+            selection = section
+            withAnimation(.easeOut(duration: 0.2)) { pageVisible = true }
+        }
     }
 
     private func snackbar(_ store: AssignmentStore) -> some View {
@@ -181,6 +197,8 @@ struct AppNavigation: View {
     }
 
     private func open(_ route: HomeworkRoute) {
+        pageTransition = UUID()
+        pageVisible = true
         switch route {
         case .assignment(let id): selection = .assignments; requestedAssignment = .init(assignmentID: id)
         case .briefing: selection = .briefing

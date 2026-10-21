@@ -47,7 +47,7 @@ struct AssignmentListView: View {
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.18)) { collapsedTitle = collapsed }
             }
         }
-        .searchable(text: $search, prompt: "Search title, course or notes")
+        .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search title, course or notes")
         .onChange(of: store.assignments, initial: true) { _, values in
             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.28)) {
                 projection.rebuild(values, sort: sort, search: search)
@@ -63,8 +63,7 @@ struct AssignmentListView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Text("Assignments").font(.headline).opacity(collapsedTitle ? 1 : 0)
-                    .accessibilityHidden(!collapsedTitle)
+                if collapsedTitle { Text("Assignments").font(.headline) }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

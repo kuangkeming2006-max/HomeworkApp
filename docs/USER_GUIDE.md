@@ -2,11 +2,13 @@
 
 ## Assignments and calendar
 
-Use **+** for manual creation or **Add with AI** for assisted import. Upcoming is the default; Completed, Abandoned and All show the other states. Search matches title, course and notes within the selected category. Priority sorting orders P1 through P4, then deadlines, creation time and UUID. The Sort menu also offers Deadline.
+Use **+** for manual creation or **Add with AI** for assisted import. Scroll vertically through Upcoming, Completed and Abandoned sections in one list. Search matches title, course and notes across the sections. Priority sorting orders P1 through P4, then deadlines, creation time and UUID. The Sort menu also offers Deadline. Scrolling replaces the large Assignments heading with a compact title at the top left.
 
-Tap the circle to choose Complete, Abandon or Restore. Swipe right for Complete/Restore; swipe left for Abandon/Delete. A full swipe never deletes automatically. Use the category header or empty area for horizontal page changes on compact layouts; rows keep their action gestures. Wider layouts use a category menu and list/detail panes. The bottom Undo action lasts five seconds and restores status/timestamps without reverting newer content edits. Abandoned tasks have no deadline reminders. Deletion retains an internal tombstone for future sync.
+Tap the circle for a bottom sheet with three large side-by-side actions: Complete, Abandon and Cancel for upcoming work; Restore, Delete and Cancel for finished work. The circle provides a light haptic; successful completion uses the system success haptic. A full swipe right completes/restores; a full swipe left deletes. A shorter left swipe reveals Abandon and Delete. There is no horizontal category paging. The animated bottom Undo bar lasts five seconds, with a once-per-second countdown, and restores status/timestamps without reverting newer content edits. Abandoned tasks have no deadline reminders. Deletion retains an internal tombstone for future sync.
 
 Open an assignment to edit it. Valid changes save automatically after a short delay and when leaving the screen. Invalid values show an error. Choose a deadline's time zone explicitly; the stored deadline is an absolute instant. The calendar groups deadlines by the device's local day. Tap the month heading to choose a month/year, use the arrows or horizontal month swipes, or return with Today. Day selection is preserved where possible and clamped for shorter months. Use + for the selected date.
+
+The calendar follows a horizontal drag and settles with a spring; arrows use the same translation. A recognized drag suppresses date taps. Date selection uses a contrasting square and a short fade; the details beneath it crossfade, including empty days. Animations respect Reduce Motion.
 
 Calendar dots show distinct states, not one dot per task: red overdue, orange reminder threshold reached, yellow due within 24 hours, accent upcoming, green completed and gray abandoned. Terminal states take precedence over deadline urgency. VoiceOver reads the counts for each state.
 
@@ -16,7 +18,11 @@ Each assignment has its own reminder. Settings defines only the default copied i
 
 The first-launch explanation lets you enable notifications or continue without them. System permission is requested only while undetermined; denied permission can be changed in system Settings. Completed, abandoned and deleted tasks have their pending/delivered reminders cancelled; edits and restoration reconcile changed requests. Past reminder times are skipped. At most 60 requests are reserved in total, including briefings and unrelated requests; later task reminders are deferred. Reopen the app to replenish this finite schedule. View opens the task; the notification's Complete action saves completion.
 
-Photos and Files are available during creation as well as editing. New-task imports are staged until Create; canceling the draft cleans its own copies, while a validation error keeps them available for correction. Imports make persistent private copies, up to 25 MB each and 100 attachments per task. The original may then be moved or removed. Identical bytes are deduplicated within that task. Image thumbnails are resized and cached; tap an image/file for Quick Look and use the trash icon to remove it. Deleted-task files are cleaned after a one-day grace period.
+Photos and Files are available during creation as well as editing. New-task imports are staged until Create; canceling the draft cleans its own copies, while a validation error keeps them available for correction. Imports make persistent private copies, up to 25 MB each and 100 attachments per task. The original may then be moved or removed. Identical bytes are deduplicated within that task. Tap a list thumbnail or large cropped editor image to open the image full screen. Pull down or use Close to dismiss; pinch or double-tap to zoom. Image filenames are omitted from the editor. Documents retain filenames and use Quick Look. Use the trash icon to remove an attachment. Deleted-task files are cleaned after a one-day grace period.
+
+## Appearance
+
+The four iPhone navigation buttons have equal widths; switching pages uses a short fade and vertical movement. Settings → Appearance offers System, Light and Dark, plus seven theme colors. Both choices are saved on the device and apply throughout the app.
 
 ## Live Activities and Briefing
 

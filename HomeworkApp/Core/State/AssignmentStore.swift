@@ -63,6 +63,7 @@ final class AssignmentStore {
         value.updatedAt = max(Date(), value.updatedAt.addingTimeInterval(0.001))
         value.localRevision += 1
         try save([value])
+        if before.status != .completed, value.status == .completed { AppHaptics.success() }
         if let undoMessage, AssignmentDisposition(value) != before {
             undo.record(id: id, before: before, after: AssignmentDisposition(value), message: undoMessage,
                         previousToken: priorToken, resultingToken: dispositionTokens[id] ?? priorToken)
@@ -80,7 +81,6 @@ final class AssignmentStore {
         action(id, message: status == .active ? "Assignment restored" : "Assignment \(status.rawValue)") {
             $0.transition(to: status, at: Date())
         }
-        if status == .completed, assignment(id)?.status == .completed { AppHaptics.success() }
     }
 
     func delete(_ id: UUID) {
