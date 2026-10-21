@@ -7,6 +7,7 @@ struct AssignmentListView: View {
     @State private var sort: AssignmentSort = .priority
     @State private var adding = false
     @State private var addingAI = false
+    @State private var choosingSort = false
     @State private var search = ""
     @State private var actionTarget: Assignment?
     @State private var projection = AssignmentListProjection()
@@ -119,6 +120,7 @@ struct AssignmentListView: View {
             switch request.action {
             case .add: adding = true
             case .ai: addingAI = true
+            case .sort: choosingSort = true
             case .today: break
             }
         }
@@ -138,6 +140,13 @@ struct AssignmentListView: View {
             .sharedBackgroundVisibility(.hidden)
         }
         .fullScreenCover(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
+        .confirmationDialog("Sort by", isPresented: $choosingSort, titleVisibility: .visible) {
+            ForEach(AssignmentSort.allCases) { option in
+                Button(option.rawValue) {
+                    if let toolbar { toolbar.sort = option } else { sort = option }
+                }
+            }
+        }
         .attachmentPreview(preview)
         .sheet(isPresented: $adding) {
             NavigationStack { AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store) }

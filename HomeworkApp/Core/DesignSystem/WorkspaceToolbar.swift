@@ -7,7 +7,7 @@ enum WorkspaceToolbarMode: Equatable { case assignments, calendar }
 @Observable @MainActor
 final class WorkspaceToolbarModel {
     struct Request: Equatable {
-        enum Action: Equatable { case add, ai, today }
+        enum Action: Equatable { case add, ai, today, sort }
         let id = UUID()
         let mode: WorkspaceToolbarMode
         let action: Action
@@ -48,13 +48,12 @@ extension EnvironmentValues {
 struct WorkspaceToolbar: View {
     @Bindable var model: WorkspaceToolbarModel
     @Namespace private var glass
-    @State private var choosingSort = false
 
     var body: some View {
         GlassEffectContainer(spacing: 12) {
             HStack(spacing: 0) {
                 if model.mode == .assignments {
-                    Button { choosingSort = true } label: {
+                    Button { model.send(.sort) } label: {
                         Image(systemName: "arrow.up.arrow.down").frame(width: 44, height: 44)
                     }
                     .accessibilityLabel("Sort").accessibilityIdentifier("assignments.sort")
@@ -85,10 +84,5 @@ struct WorkspaceToolbar: View {
         }
         .fixedSize(horizontal: true, vertical: false)
         .disabled(model.switching)
-        .confirmationDialog("Sort by", isPresented: $choosingSort, titleVisibility: .visible) {
-            ForEach(AssignmentSort.allCases) { sort in
-                Button(sort.rawValue) { model.sort = sort }
-            }
-        }
     }
 }

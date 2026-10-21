@@ -47,7 +47,7 @@ struct CalendarView: View {
             switch request.action {
             case .today: model.today()
             case .add: adding = true
-            case .ai: break
+            case .ai, .sort: break
             }
         }
         .navigationDestination(isPresented: Binding(get: { openedID != nil }, set: { if !$0 { openedID = nil } })) {

@@ -6,7 +6,7 @@ final class InteractionPreviewTests: HomeworkUITestCase {
     func testCaptureUpdatedIPhoneInteractions() {
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["--uitesting", "--fixture-design"]
+        app.launchArguments = ["--uitesting", "--fixture-design", "--fixture-assignments"]
         app.launch()
         let list = app.collectionViews["assignments.list"]
         let thumbnail = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.thumbnail.'")).firstMatch
