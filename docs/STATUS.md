@@ -1,5 +1,21 @@
 # Redesign status — iPhone delivery
 
+## Current development — 0.2.1 / build 3
+
+Branch: `feature/iphone-interactions-theme`. Application source: `8202c8f`.
+
+- Four equal-width iPhone navigation buttons with native tab containment and interruptible fade/movement.
+- One vertical Assignments list with Upcoming/Completed/Abandoned headings, compact leading title on scroll, native full-swipe completion/deletion, success haptics and a three-action bottom sheet.
+- Explicit attachment-row separators; directly tappable thumbnails; large cropped editor images without filenames; one shared fullscreen image viewer with downward dismissal.
+- Finger-following calendar month translation, spring settling/arrows, drag tap suppression, high-contrast selected-day square and independently interruptible detail fades.
+- Animated five-second Undo with one countdown update per second; saved theme colors and System/Light/Dark appearance.
+
+The [first runtime capture](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39547452633) built both targets but failed to tap the thumbnail. Its screenshot/hierarchy showed overlapping hidden navigation stacks and a bottom search field under custom navigation. Those findings led to native TabView containment and an explicit top search drawer; the initial green device build alone is not runtime acceptance.
+
+The [build-3 focused run](https://github.com/kuangkeming2006-max/HomeworkApp/actions/runs/39548721540) has a successful unsigned arm64 device build; the focused iPhone runtime capture is still pending. This is one short synthetic capture flow, not the broad historical regression suite. Historical category-navigation assertions remain available and require adaptation before using that suite for the new UI. Physical haptic feel, signing and installation remain unverified.
+
+## Previous delivery — 0.2.0
+
 The v0.1.0 delivery below is preserved. Redesign phases A–E are implemented without changing `com.kkm.homework`, attachment storage, existing preferences or Keychain identifiers. Version 0.2.0/build 2 is available as a draft release with full and extension-free unsigned IPAs. iPhone verification uses the complete runs and test-only correction recorded below; no physical signing or delivery certification is claimed. The user's latest direction prioritizes iPhone delivery; further iPad visual refinement does not block this release.
 
 | Phase | Implemented change |
