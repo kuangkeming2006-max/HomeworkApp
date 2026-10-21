@@ -48,16 +48,15 @@ extension EnvironmentValues {
 struct WorkspaceToolbar: View {
     @Bindable var model: WorkspaceToolbarModel
     @Namespace private var glass
+    @State private var choosingSort = false
 
     var body: some View {
         GlassEffectContainer(spacing: 12) {
             HStack(spacing: 0) {
                 if model.mode == .assignments {
-                    Menu {
-                        Picker("Sort by", selection: $model.sort) {
-                            ForEach(AssignmentSort.allCases) { Text($0.rawValue).tag($0) }
-                        }
-                    } label: { Image(systemName: "arrow.up.arrow.down").frame(width: 44, height: 44) }
+                    Button { choosingSort = true } label: {
+                        Image(systemName: "arrow.up.arrow.down").frame(width: 44, height: 44)
+                    }
                     .accessibilityLabel("Sort").accessibilityIdentifier("assignments.sort")
                     .transition(.opacity.combined(with: .scale(scale: 0.8)))
                 } else {
@@ -86,5 +85,10 @@ struct WorkspaceToolbar: View {
         }
         .fixedSize(horizontal: true, vertical: false)
         .disabled(model.switching)
+        .confirmationDialog("Sort by", isPresented: $choosingSort, titleVisibility: .visible) {
+            ForEach(AssignmentSort.allCases) { sort in
+                Button(sort.rawValue) { model.sort = sort }
+            }
+        }
     }
 }
