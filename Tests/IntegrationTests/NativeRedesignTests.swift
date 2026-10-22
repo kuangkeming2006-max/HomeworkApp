@@ -4,6 +4,27 @@ import HomeworkDomain
 
 @MainActor
 final class NativeRedesignTests: XCTestCase {
+    func testHeadingIgnoresMenuLayoutAndInsetChanges() {
+        let layout = AssignmentHeadingLayout()
+        layout.update(offset: -200, topInset: 200)
+        layout.update(offset: -120, topInset: 200)
+        XCTAssertFalse(layout.isCompact, "Idle layout changes must not replace an open menu's host")
+        layout.setScrolling(true)
+        layout.update(offset: -20, topInset: 200)
+        XCTAssertTrue(layout.isCompact)
+        layout.update(offset: 40, topInset: 100)
+        XCTAssertTrue(layout.isCompact, "Collapsing the native bar must not reverse the title change")
+        layout.update(offset: 30, topInset: 100)
+        XCTAssertTrue(layout.isCompact)
+        layout.update(offset: -100, topInset: 100)
+        XCTAssertFalse(layout.isCompact)
+        layout.setScrolling(false)
+        layout.update(offset: 500, topInset: 100)
+        XCTAssertFalse(layout.isCompact)
+        layout.reset()
+        XCTAssertFalse(layout.isCompact)
+    }
+
     private func makeStore(_ values: [Assignment]) throws -> AssignmentStore {
         let repository = SwiftDataAssignmentRepository(container: try SwiftDataAssignmentRepository.makeContainer(inMemory: true))
         try repository.save(values)

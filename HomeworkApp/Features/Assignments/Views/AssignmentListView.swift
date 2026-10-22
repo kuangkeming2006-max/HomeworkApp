@@ -12,7 +12,7 @@ struct AssignmentListView: View {
     @State private var projection = AssignmentListProjection()
     @State private var preview = AttachmentPreviewModel()
     @State private var visibleIDs: Set<UUID> = []
-    @State private var compactHeading = false
+    @State private var headingLayout = AssignmentHeadingLayout()
     @Environment(\.appReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
     @Environment(\.attachmentService) private var attachmentService
@@ -46,14 +46,13 @@ struct AssignmentListView: View {
             }
             .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
             .accessibilityIdentifier("assignments.list")
-            .onScrollGeometryChange(for: CGFloat.self) {
-                max(0, $0.contentOffset.y + $0.contentInsets.top)
-            } action: { _, distance in
-                // Insets change as native toolbar content collapses. Two thresholds
-                // prevent a layout update near the boundary from toggling it back.
-                if compactHeading {
-                    if distance < 8 { compactHeading = false }
-                } else if distance > 80 { compactHeading = true }
+            .onScrollGeometryChange(for: CGPoint.self) {
+                CGPoint(x: $0.contentOffset.y, y: $0.contentInsets.top)
+            } action: { _, position in
+                headingLayout.update(offset: position.x, topInset: position.y)
+            }
+            .onScrollPhaseChange { _, phase in
+                headingLayout.setScrolling(phase == .interacting || phase == .decelerating)
             }
             .overlay {
                 if projection.isEmpty {
@@ -65,7 +64,8 @@ struct AssignmentListView: View {
         }
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search title, course or notes")
         .onChange(of: store.assignments, initial: true) { _, _ in rebuild(animated: true) }
-        .onChange(of: category) { _, _ in rebuild(animated: true) }
+        .onChange(of: category) { _, _ in headingLayout.reset(); rebuild(animated: true) }
+        .onChange(of: projection.isEmpty) { _, empty in if empty { headingLayout.reset() } }
         .onChange(of: sort) { _, _ in rebuild(animated: true) }
         .onChange(of: search) { _, _ in projection.refilter(filter: category, search: search) }
         .onChange(of: toolbar?.sort, initial: true) { _, value in if let value { sort = value } }
@@ -87,7 +87,8 @@ struct AssignmentListView: View {
             case .today: break
             }
         }
-        .navigationTitle("Assignments").navigationBarTitleDisplayMode(.large)
+        .navigationTitle("Assignments")
+        .navigationBarTitleDisplayMode(headingLayout.isCompact ? .inline : .large)
         .toolbar {
             // The native subtitle slot hosts interactive controls; the title string
             // remains the navigation/back label while the row supplies its visual heading.
@@ -95,12 +96,15 @@ struct AssignmentListView: View {
                 Color.clear.frame(width: 1, height: 1).accessibilityHidden(true)
             }
             ToolbarItem(placement: .largeSubtitle) {
-                if compactHeading { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
-                else { assignmentHeading(large: true) }
+                assignmentHeading(large: true)
+                    .frame(height: headingLayout.isCompact ? 0 : nil).clipped()
+                    .opacity(headingLayout.isCompact ? 0 : 1)
+                    .allowsHitTesting(!headingLayout.isCompact)
+                    .accessibilityHidden(headingLayout.isCompact)
             }
                 .sharedBackgroundVisibility(.hidden)
             ToolbarItem(placement: .title) {
-                if compactHeading { assignmentHeading(large: false) }
+                if headingLayout.isCompact { assignmentHeading(large: false) }
                 else { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
             }
             .sharedBackgroundVisibility(.hidden)
