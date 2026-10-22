@@ -34,7 +34,8 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
         capture(app, "PDF preview")
         closePreview.tap()
         app.navigationBars["Assignment"].buttons.element(boundBy: 0).tap()
-        if app.tabBars.buttons["Calendar"].exists { app.tabBars.buttons["Calendar"].tap() }
+        let calendarTab = app.tabBars.buttons["Calendar"]
+        if calendarTab.waitForExistence(timeout: 5) { calendarTab.tap() }
         else {
             if !app.staticTexts["Calendar"].firstMatch.exists { app.buttons["Show Sidebar"].tap() }
             app.staticTexts["Calendar"].firstMatch.tap()

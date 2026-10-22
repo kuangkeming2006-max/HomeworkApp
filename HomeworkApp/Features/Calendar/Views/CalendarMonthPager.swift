@@ -1,7 +1,7 @@
 import SwiftUI
 import HomeworkDomain
 
-/// One touch recognizer owns the entire grid, so day activation cannot compete with paging.
+/// Native date buttons share a horizontal-only pan with the containing scroll view.
 struct CalendarMonthPager: View {
     let model: CalendarViewModel
     let onPickMonth: () -> Void
@@ -15,22 +15,12 @@ struct CalendarMonthPager: View {
     @State private var settling = false
     @State private var generation = 0
     @State private var renderedMonth: Date?
-    @GestureState private var activeTouchID: UUID? = nil
-    @State private var tracking: GridTouch?
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
 
     private struct MonthPage: Identifiable {
         let id: Date
         let offset: Int
         let days: [Date?]
-    }
-
-    private enum TouchAxis { case undecided, horizontal, vertical }
-    private struct GridTouch {
-        let id: UUID?
-        let start: CGPoint
-        var greatestDistance: CGFloat = 0
-        var axis: TouchAxis = .undecided
     }
 
     var body: some View {
@@ -75,13 +65,13 @@ struct CalendarMonthPager: View {
                 .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
                 .contentShape(Rectangle())
                 .clipped()
-                // Simultaneous recognition leaves vertical scrolling to the containing ScrollView.
-                .simultaneousGesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
-                    .updating($activeTouchID) { _, identifier, _ in
-                        if identifier == nil { identifier = UUID() }
-                    }
-                    .onChanged { track($0, width: geometry.size.width) }
-                    .onEnded { finish($0, width: geometry.size.width) })
+                .gesture(HorizontalCalendarPan(onBegin: {
+                    generation += 1; settling = false; onPagingChanged(true)
+                }, onChange: { distance in
+                    drag = max(-geometry.size.width, min(geometry.size.width, distance))
+                }, onEnd: { distance, velocity in
+                    finish(distance: distance, velocity: velocity, width: geometry.size.width)
+                }, onCancel: returnToRest))
                 .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = max(1, $0) }
             }
             .frame(height: 318)
@@ -93,17 +83,8 @@ struct CalendarMonthPager: View {
             withTransaction(Transaction(animation: nil)) { rebuildPages(); drag = 0; settling = false }
             onPagingChanged(false)
         }
-        .onChange(of: activeTouchID) { _, identifier in
-            // GestureState also resets on cancellation, where onEnded is not called.
-            guard identifier == nil else { return }
-            let endedTouch = tracking?.id
-            Task { @MainActor in
-                // Allow the normal onEnded callback to commit before handling cancellation.
-                await Task.yield()
-                guard activeTouchID == nil, tracking?.id == endedTouch, !settling, drag != 0 else { return }
-                tracking = nil
-                returnToRest()
-            }
+        .onDisappear {
+            generation += 1; drag = 0; settling = false
         }
     }
 
@@ -138,40 +119,12 @@ struct CalendarMonthPager: View {
         }
     }
 
-    private func track(_ value: DragGesture.Value, width: CGFloat) {
-        var touch = tracking?.id == activeTouchID ? tracking : nil
-        if touch == nil { touch = GridTouch(id: activeTouchID, start: value.startLocation) }
-        guard var touch else { return }
-        let x = abs(value.translation.width)
-        let y = abs(value.translation.height)
-        touch.greatestDistance = max(touch.greatestDistance, hypot(x, y))
-        if touch.axis == .undecided, max(x, y) > 8 {
-            if x > y * 1.2 {
-                touch.axis = .horizontal
-                generation += 1; settling = false
-                onPagingChanged(true)
-            }
-            else if y > x * 1.2 { touch.axis = .vertical }
-        }
-        tracking = touch
-        if touch.axis == .horizontal { drag = max(-width, min(width, value.translation.width)) }
-    }
-
-    private func finish(_ value: DragGesture.Value, width: CGFloat) {
-        defer { tracking = nil }
-        guard !settling, let touch = tracking else { return }
-        if touch.axis == .horizontal {
-            let distance = value.translation.width
-            if abs(distance) > width * 0.23 || abs(value.predictedEndTranslation.width) > width * 0.45 {
-                shift(distance < 0 ? 1 : -1, manual: true)
-            } else { returnToRest() }
-        } else if touch.greatestDistance <= 8,
-                  let startDay = day(at: touch.start, width: width),
-                  let endDay = day(at: value.location, width: width),
-                  model.calendar.isDate(startDay, inSameDayAs: endDay) {
-            onNavigate()
-            withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.9)) { model.selectDay(endDay) }
-        }
+    private func finish(distance: CGFloat, velocity: CGFloat, width: CGFloat) {
+        let predicted = distance + velocity * 0.18
+        if abs(distance) > width * 0.23 || abs(predicted) > width * 0.45 {
+            let direction = abs(distance) > width * 0.23 ? distance : predicted
+            shift(direction < 0 ? 1 : -1, manual: true)
+        } else { returnToRest() }
     }
 
     private func returnToRest() {
@@ -187,21 +140,15 @@ struct CalendarMonthPager: View {
         }
     }
 
-    private func day(at point: CGPoint, width: CGFloat) -> Date? {
-        let cellWidth = (width - 24) / 7
-        guard cellWidth > 0, point.x >= 0, point.y >= 0, point.x < width, point.y < 318 else { return nil }
-        let column = Int(point.x / (cellWidth + 4))
-        let row = Int(point.y / 54)
-        let rectangle = CGRect(x: CGFloat(column) * (cellWidth + 4), y: CGFloat(row) * 54, width: cellWidth, height: 48)
-        let index = row * 7 + column
-        guard column < 7, rectangle.contains(point), let page = pages.first(where: { $0.offset == 0 }), page.days.indices.contains(index) else { return nil }
-        return page.days[index]
-    }
-
     private func dayButton(_ day: Date, page: Date) -> some View {
         let summary = model.index.day(day)
         let selected = page == model.month && model.calendar.isDate(day, inSameDayAs: model.selectedDate)
-        return VStack(spacing: 3) {
+        return Button {
+            guard !settling else { return }
+            onNavigate()
+            withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.9)) { model.selectDay(day) }
+        } label: {
+            VStack(spacing: 3) {
                 Text("\(model.calendar.component(.day, from: day))")
                     .fontWeight(selected ? .bold : .regular).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5)
                 HStack(spacing: 3) {
@@ -217,14 +164,10 @@ struct CalendarMonthPager: View {
                     .transaction { $0.animation = nil }
             }
             .contentShape(Rectangle())
-        .accessibilityElement(children: .ignore)
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAddTraits(selected ? [.isSelected] : [])
-        .accessibilityAction {
-            guard !settling else { return }
-            onNavigate()
-            withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.9)) { model.selectDay(day) }
         }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityLabel(Text(day, format: .dateTime.month(.wide).day().year()))
         .accessibilityValue(summary.accessibilitySummary.isEmpty ? "No assignments" : summary.accessibilitySummary)
         .accessibilityIdentifier("calendar.day.\(model.identifier(for: day))")

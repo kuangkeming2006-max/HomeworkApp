@@ -12,6 +12,8 @@ struct EditorDismissalGuard: UIViewControllerRepresentable {
         controller.needsConfirmation = needsConfirmation
         controller.onAttempt = onAttempt
         controller.install()
+        // SwiftUI updates its presentation delegate during the same update cycle.
+        DispatchQueue.main.async { [weak controller] in controller?.install() }
     }
     static func dismantleUIViewController(_ controller: Controller, coordinator: ()) { controller.restore() }
 
@@ -34,21 +36,23 @@ struct EditorDismissalGuard: UIViewControllerRepresentable {
             guard needsConfirmation else { restore(); return }
             if owner == nil {
                 owner = top; priorBack = top.navigationItem.backAction
-                top.navigationItem.backAction = UIAction(title: "Back", image: UIImage(systemName: "chevron.backward")) { [weak self] _ in
-                    self?.onAttempt()
-                }
-                for gesture in [navigation.interactivePopGestureRecognizer, navigation.interactiveContentPopGestureRecognizer].compactMap({ $0 }) {
-                    gestures.append((gesture, gesture.delegate)); gesture.delegate = self
-                }
-                // A SwiftUI sheet may present a hosting parent around its navigation controller.
-                var ancestor: UIViewController? = navigation
-                while let controller = ancestor {
-                    if controller.presentingViewController != nil, let presenter = controller.presentationController {
-                        presentation = presenter; priorPresentation = presenter.delegate; presenter.delegate = self
-                        break
+                if navigation.viewControllers.count > 1 {
+                    top.navigationItem.backAction = UIAction(title: "Back") { [weak self] _ in self?.onAttempt() }
+                    for gesture in [navigation.interactivePopGestureRecognizer, navigation.interactiveContentPopGestureRecognizer].compactMap({ $0 }) {
+                        gestures.append((gesture, gesture.delegate)); gesture.delegate = self
                     }
-                    ancestor = controller.parent
                 }
+            }
+            // Reinstall independently of the Back hook, including after an alert or picker closes.
+            var ancestor: UIViewController? = navigation
+            while let controller = ancestor {
+                if controller.presentingViewController != nil, let presenter = controller.presentationController {
+                    if presenter.delegate !== self {
+                        presentation = presenter; priorPresentation = presenter.delegate; presenter.delegate = self
+                    }
+                    break
+                }
+                ancestor = controller.parent
             }
         }
 

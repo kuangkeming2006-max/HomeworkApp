@@ -34,7 +34,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.collectionViews["assignments.list"].swipeUp()
         XCTAssertTrue(last.isHittable)
         XCTAssertLessThanOrEqual(last.frame.maxY, tabs.frame.minY + 2, "The final assignment must scroll above the native tab bar")
-        capture("All — last row clear of tabs and native compact title")
+        capture("All — final row clear of native tabs")
         category("Completed", app)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Finished problem set"))
         XCTAssertEqual(openRows(app).count, 1)
@@ -138,7 +138,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.buttons["editor.back"].tap()
         XCTAssertTrue(app.alerts["Save changes?"].waitForExistence(timeout: 5))
         app.alerts.buttons["Keep Editing"].tap()
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12))
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08))
             .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7)))
         XCTAssertTrue(app.alerts["Save changes?"].waitForExistence(timeout: 5), "A dirty sheet must report attempted interactive dismissal")
         capture("New draft — interactive dismissal asks before saving")
@@ -260,8 +260,13 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.buttons["calendar.today"].tap()
         XCTAssertEqual(selectedDays(app).count, 1)
         capture("Calendar — dark Reduce Motion and accessibility text")
-        app.scrollViews.firstMatch.swipeUp()
         let details = app.staticTexts["calendar.selectedDate"]
+        let date = details.label
+        let originalY = details.frame.minY
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.57))
+            .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.40)))
+        XCTAssertLessThan(details.frame.minY, originalY - 20, "A vertical drag starting inside the grid must scroll the page")
+        XCTAssertEqual(details.label, date, "Vertical scrolling must not select a date")
         XCTAssertTrue(details.isHittable)
         XCTAssertLessThanOrEqual(details.frame.maxY, app.tabBars.firstMatch.frame.minY + 2)
         capture("Calendar — accessible details scrolled clear of tabs")

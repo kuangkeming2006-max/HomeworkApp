@@ -19,6 +19,7 @@ struct CalendarView: View {
             ScrollView {
                 calendarContent(now: context.date)
             }
+            .accessibilityIdentifier("calendar.scroll")
             .onChange(of: context.date, initial: true) { _, date in model.rebuild(store.assignments, now: date) }
             .onChange(of: store.assignments) { _, values in
                 withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.26)) { model.rebuild(values, now: context.date) }
