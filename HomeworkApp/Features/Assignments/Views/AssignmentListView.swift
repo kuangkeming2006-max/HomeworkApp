@@ -95,14 +95,6 @@ struct AssignmentListView: View {
             ToolbarItem(placement: .largeTitle) {
                 Color.clear.frame(width: 1, height: 1).accessibilityHidden(true)
             }
-            ToolbarItem(placement: .largeSubtitle) {
-                assignmentHeading(large: true)
-                    .frame(height: headingLayout.isCompact ? 0 : nil).clipped()
-                    .opacity(headingLayout.isCompact ? 0 : 1)
-                    .allowsHitTesting(!headingLayout.isCompact)
-                    .accessibilityHidden(headingLayout.isCompact)
-            }
-                .sharedBackgroundVisibility(.hidden)
             ToolbarItem(placement: .title) {
                 if headingLayout.isCompact { assignmentHeading(large: false) }
                 else { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
@@ -111,6 +103,13 @@ struct AssignmentListView: View {
             if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) }
         }
         .attachmentPreview(preview)
+        .background(InteractiveNavigationSubtitle(content:
+            assignmentHeading(large: true)
+                .frame(height: headingLayout.isCompact ? 0 : nil).clipped()
+                .opacity(headingLayout.isCompact ? 0 : 1)
+                .allowsHitTesting(!headingLayout.isCompact)
+                .accessibilityHidden(headingLayout.isCompact)
+        ))
         .navigationDestination(isPresented: $adding) {
             AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store)
         }

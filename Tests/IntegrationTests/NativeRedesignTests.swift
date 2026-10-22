@@ -23,6 +23,11 @@ final class NativeRedesignTests: XCTestCase {
         XCTAssertFalse(layout.isCompact)
         layout.reset()
         XCTAssertFalse(layout.isCompact)
+        layout.setScrolling(true)
+        layout.update(offset: 0, topInset: 100)
+        layout.update(offset: -120, topInset: 100)
+        layout.update(offset: 0, topInset: 100)
+        XCTAssertFalse(layout.isCompact, "Pull-to-search spring-back must not collapse a title at the top")
     }
 
     private func makeStore(_ values: [Assignment]) throws -> AssignmentStore {
