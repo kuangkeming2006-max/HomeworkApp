@@ -5,7 +5,7 @@ import HomeworkDomain
 struct AssignmentCompletionButton: View {
     let assignment: Assignment
     let action: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var reduceMotion
     @State private var burst = false
     @State private var reaction = 0
 

@@ -79,7 +79,7 @@ struct WorkspaceToolbar: ToolbarContent {
 private struct WorkspaceActionTransition: ViewModifier {
     let model: WorkspaceToolbarModel
     let mode: WorkspaceToolbarMode
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var reduceMotion
     @State private var appeared = false
     private var active: Bool { model.selectedSection == (mode == .assignments ? "Assignments" : "Calendar") }
     func body(content: Content) -> some View {

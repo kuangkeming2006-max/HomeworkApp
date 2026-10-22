@@ -12,7 +12,7 @@ struct AssignmentListView: View {
     @State private var projection = AssignmentListProjection()
     @State private var preview = AttachmentPreviewModel()
     @State private var visibleIDs: Set<UUID> = []
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
     @Environment(\.attachmentService) private var attachmentService
     @Environment(\.workspaceToolbar) private var toolbar
@@ -36,7 +36,7 @@ struct AssignmentListView: View {
                         .accessibilityIdentifier("assignments.section.\(status.rawValue)")
                     case .assignment(let assignment):
                         row(assignment, now: context.date)
-                            .transition(reduceMotion ? .opacity : .blurReplace)
+                            .transition(rowTransition)
                             .onScrollVisibilityChange(threshold: 0.01) { visible in
                                 if visible { visibleIDs.insert(assignment.id) } else { visibleIDs.remove(assignment.id) }
                             }
@@ -109,6 +109,10 @@ struct AssignmentListView: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16).background(.bar, ignoresSafeAreaEdges: [])
+    }
+
+    private var rowTransition: AnyTransition {
+        reduceMotion ? .opacity : AnyTransition(BlurReplaceTransition(configuration: .downUp))
     }
 
     private var emptyTitle: String {

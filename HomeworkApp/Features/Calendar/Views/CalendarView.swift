@@ -10,7 +10,7 @@ struct CalendarView: View {
     @State private var revealTask: Task<Void, Never>?
     @State private var openedID: UUID?
     @State private var preview = AttachmentPreviewModel()
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var reduceMotion
     @Environment(\.attachmentService) private var attachmentService
     @Environment(\.workspaceToolbar) private var toolbar
 
@@ -24,7 +24,7 @@ struct CalendarView: View {
                     ZStack(alignment: .topLeading) {
                         dayDetails(now: context.date)
                             .id(model.detailRevision)
-                            .transition(reduceMotion ? .opacity : .blurReplace)
+                            .transition(detailTransition)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .animation(detailAnimation, value: model.detailRevision)
@@ -99,6 +99,7 @@ struct CalendarView: View {
     }
 
     private var detailAnimation: Animation { reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.38, dampingFraction: 0.9) }
+    private var detailTransition: AnyTransition { reduceMotion ? .opacity : AnyTransition(BlurReplaceTransition(configuration: .downUp)) }
 
     private func showDetails() {
         revealTask?.cancel(); revealTask = nil

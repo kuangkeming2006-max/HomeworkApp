@@ -4,7 +4,7 @@ struct UndoSnackbar: View {
     let coordinator: UndoCoordinator
     var systemAccessory = false
     let undo: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var reduceMotion
     @State private var displayedAction: UndoCoordinator.Action?
     @State private var visible = false
     @State private var generation = UUID()
@@ -72,7 +72,7 @@ struct UndoSnackbar: View {
 struct UndoTabAccessory: ViewModifier {
     let coordinator: UndoCoordinator
     let undo: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var reduceMotion
 
     @ViewBuilder
     func body(content: Content) -> some View {

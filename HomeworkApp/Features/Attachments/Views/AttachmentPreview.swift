@@ -27,7 +27,7 @@ private struct FullScreenImagePreview: View {
     let reference: AttachmentReference
     @Environment(\.dismiss) private var dismiss
     @Environment(\.attachmentService) private var service
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var reduceMotion
     @State private var model = AttachmentImagePreviewModel()
     @State private var drag: CGFloat = 0
     @State private var zoom: CGFloat = 1

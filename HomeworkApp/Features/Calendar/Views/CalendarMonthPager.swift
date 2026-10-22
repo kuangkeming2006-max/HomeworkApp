@@ -7,7 +7,7 @@ struct CalendarMonthPager: View {
     let onPickMonth: () -> Void
     let onPagingChanged: (Bool) -> Void
     let onNavigate: () -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.appReduceMotion) private var reduceMotion
     @Environment(\.appAccent) private var accent
     @State private var pages: [MonthPage] = []
     @State private var drag: CGFloat = 0

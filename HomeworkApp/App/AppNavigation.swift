@@ -52,7 +52,7 @@ struct AppNavigation: View {
         .environment(\.appAccent, container.preferences.accent.color)
         .environment(\.workspaceToolbar, workspaceToolbar)
         .preferredColorScheme(effectiveColorScheme)
-        .environment(\.accessibilityReduceMotion, effectiveReduceMotion)
+        .environment(\.appReduceMotion, effectiveReduceMotion)
         .environment(\.dynamicTypeSize, effectiveTypeSize)
         .environment(\.attachmentService, container.attachmentService)
         .environment(\.llmProviderFactory, { [container] in try container.makeLLMProvider() })
@@ -135,14 +135,6 @@ struct AppNavigation: View {
             .modifier(UndoTabAccessory(coordinator: store.undo) {
                 withAnimation(reduceMotion ? nil : .smooth(duration: 0.24)) { store.undoLatest() }
             })
-        }
-    }
-
-    private func toolbarMode(_ section: AppSection?) -> WorkspaceToolbarMode? {
-        switch section {
-        case .assignments: .assignments
-        case .calendar: .calendar
-        default: nil
         }
     }
 
