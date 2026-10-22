@@ -39,7 +39,7 @@ struct AssignmentListView: View {
                         headingLayout.update(headerBottom: frame.maxY, visibleTop: visibleTop)
                         if !searchExpanded, scrollInteraction.isUserScrolling, frame.minY > visibleTop + 40 {
                             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = true }
-                        } else if searchExpanded, search.isEmpty, frame.maxY < visibleTop {
+                        } else if searchExpanded, search.isEmpty, scrollInteraction.isUserScrolling, frame.maxY < visibleTop {
                             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = false }
                         }
                     }
@@ -54,6 +54,7 @@ struct AssignmentListView: View {
                 }
               }
               .listSectionSeparator(.hidden)
+              .listSectionMargins(.vertical, 0)
               Section {
                 ForEach(projection.entries) { entry in
                     switch entry {
@@ -76,6 +77,7 @@ struct AssignmentListView: View {
                 }
               }
               .listSectionSeparator(.hidden, edges: .top)
+              .listSectionMargins(.top, 0)
             }
             .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
             .contentMargins(.top, 0, for: .scrollContent)
@@ -145,6 +147,12 @@ struct AssignmentListView: View {
                 .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.5)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(large ? "assignments.heading.large" : "assignments.heading.compact")
+                .accessibilityAction(named: "Search assignments") {
+                    if let scroll = scrollInteraction.scrollView {
+                        scroll.setContentOffset(CGPoint(x: scroll.contentOffset.x, y: -scroll.adjustedContentInset.top), animated: !reduceMotion)
+                    }
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = true }
+                }
             if large { Spacer(minLength: 8) }
             Menu {
                 Picker("Category", selection: Binding(get: { category }, set: {

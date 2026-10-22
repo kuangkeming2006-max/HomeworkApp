@@ -34,9 +34,9 @@ class HomeworkUITestCase: XCTestCase {
             app.buttons["assignments.filter"].tap()
             let option = app.buttons[name]
             XCTAssertTrue(option.waitForExistence(timeout: 5))
-            // Native menu options can report hittable=false while visibly presented.
-            // Touch their reported center and verify the actual resulting selection.
-            option.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            // Let native activation resolve its hit point after menu presentation.
+            // A provisional accessibility frame can be CGRect.null during animation.
+            option.tap()
             // The host can move between the scrolling heading and inline toolbar.
             // Resolve it again after the native action has settled, rather than
             // retaining a predicate object for the previous accessibility element.
