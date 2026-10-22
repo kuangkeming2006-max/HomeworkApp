@@ -55,6 +55,7 @@ struct AssignmentListView: View {
               }
               .listSectionSeparator(.hidden)
               .listSectionMargins(.vertical, 0)
+              .environment(\.defaultMinListRowHeight, 0)
               Section {
                 ForEach(projection.entries) { entry in
                     switch entry {
@@ -168,7 +169,7 @@ struct AssignmentListView: View {
                 .font(large ? .subheadline.weight(.semibold) : .caption.weight(.semibold))
                 .foregroundStyle(.tint).frame(minHeight: 44).contentShape(Rectangle())
             }
-            .buttonStyle(.plain).accessibilityIdentifier("assignments.filter")
+            .buttonStyle(.plain).frame(height: 44).accessibilityIdentifier("assignments.filter")
             .accessibilityLabel("Category").accessibilityValue(category.rawValue)
         }
         .frame(maxWidth: large ? .infinity : nil, alignment: .leading)

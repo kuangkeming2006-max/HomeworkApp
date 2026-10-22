@@ -8,7 +8,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         let app = launch(["--fixture-assignments"])
         let tabs = app.tabBars.firstMatch
         capture("Assignments — category beside title without background")
-        XCTAssertFalse(app.searchFields.firstMatch.exists, "Search is revealed only by pulling down")
+        XCTAssertEqual(app.searchFields.count, 0, "Search is revealed only by pulling down")
         XCTAssertEqual(app.buttons.matching(identifier: "assignments.filter").count, 1)
         let categoryControl = app.buttons["assignments.filter"]
         if categoryControl.waitForExistence(timeout: 3) {
@@ -74,7 +74,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.active"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.completed"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.abandoned"].exists)
-        XCTAssertFalse(app.searchFields.firstMatch.exists, "Filtering must not reveal search without a pull")
+        XCTAssertEqual(app.searchFields.count, 0, "Filtering must not reveal search without a pull")
         capture("Categories — all five filters retain colored sections")
         category("Completed", app)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Finished problem set"))
@@ -98,6 +98,10 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         let heading = app.staticTexts["assignments.heading.large"]
         XCTAssertTrue(heading.waitForExistence(timeout: 5))
         let titleY = heading.frame.minY
+        let layoutTree = XCTAttachment(string: app.debugDescription)
+        layoutTree.name = "Assignments header geometry"
+        layoutTree.lifetime = .keepAlways
+        add(layoutTree)
         for _ in 0..<2 {
             tabs.buttons["Calendar"].tap()
             XCTAssertTrue(app.buttons["calendar.today"].isHittable)
