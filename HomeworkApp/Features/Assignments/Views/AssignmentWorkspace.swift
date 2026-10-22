@@ -11,7 +11,6 @@ struct AssignmentWorkspace: View {
     @State private var selectedID: UUID?
     // Split columns share navigation machinery with sidebar destinations of other types.
     @State private var path = NavigationPath()
-    @Namespace private var detailTransition
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
@@ -35,11 +34,10 @@ struct AssignmentWorkspace: View {
                 }
             } else {
                 NavigationStack(path: $path) {
-                    AssignmentListView(store: store, transitionNamespace: detailTransition) { selectedID = $0; path.append($0) }
+                    AssignmentListView(store: store) { selectedID = $0; path.append($0) }
                         .navigationDestination(for: UUID.self) { id in
                             if let assignment = store.assignment(id) {
                                 AssignmentDetailView(assignment: assignment, store: store).id(id)
-                                    .navigationTransition(.zoom(sourceID: id, in: detailTransition))
                             } else {
                                 ContentUnavailableView("Assignment deleted", systemImage: "trash")
                             }

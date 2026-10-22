@@ -12,6 +12,7 @@ struct SettingsView: View {
     let buildProvider: LLMProviderBuilder
     var liveActivities: LiveActivityCoordinator? = nil
     @Environment(\.openURL) private var openURL
+    @Namespace private var themeTransition
 
     var body: some View {
         @Bindable var preferences = self.preferences
@@ -25,13 +26,14 @@ struct SettingsView: View {
                 NavigationLink {
                     ThemeColorPicker(preferences: preferences)
                         .toolbar(.hidden, for: .tabBar)
+                        .navigationTransition(.zoom(sourceID: "theme.color", in: themeTransition))
                 } label: {
                     HStack {
                         Text("Theme color").foregroundStyle(.primary)
                         Spacer()
                         Circle().fill(preferences.accent.color).frame(width: 18, height: 18)
                         Text(preferences.accent.rawValue).foregroundStyle(.secondary)
-                    }
+                    }.matchedTransitionSource(id: "theme.color", in: themeTransition)
                 }
                 .accessibilityIdentifier("settings.accent")
             }

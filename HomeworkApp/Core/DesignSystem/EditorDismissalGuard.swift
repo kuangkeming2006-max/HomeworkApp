@@ -40,8 +40,14 @@ struct EditorDismissalGuard: UIViewControllerRepresentable {
                 for gesture in [navigation.interactivePopGestureRecognizer, navigation.interactiveContentPopGestureRecognizer].compactMap({ $0 }) {
                     gestures.append((gesture, gesture.delegate)); gesture.delegate = self
                 }
-                if let presenter = navigation.presentationController {
-                    presentation = presenter; priorPresentation = presenter.delegate; presenter.delegate = self
+                // A SwiftUI sheet may present a hosting parent around its navigation controller.
+                var ancestor: UIViewController? = navigation
+                while let controller = ancestor {
+                    if controller.presentingViewController != nil, let presenter = controller.presentationController {
+                        presentation = presenter; priorPresentation = presenter.delegate; presenter.delegate = self
+                        break
+                    }
+                    ancestor = controller.parent
                 }
             }
         }

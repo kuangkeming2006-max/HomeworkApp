@@ -136,6 +136,12 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(newTitle.waitForExistence(timeout: 5))
         newTitle.tap(); newTitle.typeText("Explicitly saved new assignment")
         app.buttons["editor.back"].tap()
+        XCTAssertTrue(app.alerts["Save changes?"].waitForExistence(timeout: 5))
+        app.alerts.buttons["Keep Editing"].tap()
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12))
+            .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7)))
+        XCTAssertTrue(app.alerts["Save changes?"].waitForExistence(timeout: 5), "A dirty sheet must report attempted interactive dismissal")
+        capture("New draft — interactive dismissal asks before saving")
         app.alerts.buttons["Save"].tap()
         XCTAssertTrue(app.buttons["assignments.add"].waitForExistence(timeout: 5))
         XCTAssertTrue(openRows(app).matching(NSPredicate(format: "label CONTAINS 'Explicitly saved new assignment'")).firstMatch.exists)
@@ -241,6 +247,14 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertFalse(app.tabBars.firstMatch.isHittable)
         capture("AI settings — secondary native navigation")
         app.navigationBars["AI provider"].buttons.element(boundBy: 0).tap()
+        let backup = app.buttons["settings.backup"]
+        let settings = app.descendants(matching: .any)["settings.form"]
+        for _ in 0..<4 where !backup.isHittable { settings.swipeUp() }
+        backup.tap()
+        XCTAssertTrue(app.navigationBars["Backup and restore"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.tabBars.firstMatch.isHittable)
+        capture("Backup — native secondary page without tabs")
+        app.navigationBars["Backup and restore"].buttons.element(boundBy: 0).tap()
         app.tabBars.buttons["Calendar"].tap()
         app.buttons["calendar.next"].tap()
         app.buttons["calendar.today"].tap()

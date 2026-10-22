@@ -90,6 +90,7 @@ struct AssignmentDetailView: View {
         }
         .background(EditorDismissalGuard(needsConfirmation: editor.hasChanges || closing || attachmentModel?.busy == true,
                                          onAttempt: requestExit))
+        .interactiveDismissDisabled(editor.hasChanges || closing || attachmentModel?.busy == true)
         .alert("Save changes?", isPresented: $confirmingExit) {
             Button("Save", action: saveAndExit).disabled(!editor.canSave || attachmentModel?.busy == true)
             Button("Discard Changes", role: .destructive, action: discardAndExit)

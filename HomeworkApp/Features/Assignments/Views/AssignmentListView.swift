@@ -3,7 +3,6 @@ import HomeworkDomain
 
 struct AssignmentListView: View {
     let store: AssignmentStore
-    var transitionNamespace: Namespace.ID? = nil
     let onOpen: (UUID) -> Void
     @State private var sort: AssignmentSort = .priority
     @State private var fallbackCategory: AssignmentFilter = .upcoming
@@ -151,7 +150,6 @@ struct AssignmentListView: View {
                 if assignment.deletedAt == nil { onOpen(assignment.id) }
             }, onPreview: { reference in Task { await preview.open(reference, service: attachmentService) } })
         }
-        .modifier(AssignmentZoomSource(id: assignment.id, namespace: transitionNamespace))
         .padding(.vertical, 3).listRowSeparator(.visible, edges: .bottom)
         .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
         .alignmentGuide(.listRowSeparatorTrailing) { $0.width }
@@ -193,14 +191,5 @@ struct AssignmentListView: View {
         withAnimation(animated ? motion : nil) {
             projection.rebuild(store.assignments, sort: sort, filter: category, search: search)
         }
-    }
-}
-
-private struct AssignmentZoomSource: ViewModifier {
-    let id: UUID
-    let namespace: Namespace.ID?
-    @ViewBuilder func body(content: Content) -> some View {
-        if let namespace { content.matchedTransitionSource(id: id, in: namespace) }
-        else { content }
     }
 }
