@@ -8,6 +8,9 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         let app = launch()
         let tabs = app.tabBars.firstMatch
         let titleY = app.navigationBars["Assignments"].staticTexts["Assignments"].frame.minY
+        let heading = app.navigationBars["Assignments"].staticTexts["Assignments"]
+        XCTAssertGreaterThan(app.buttons["assignments.filter"].frame.minX, heading.frame.maxX)
+        XCTAssertEqual(app.buttons["assignments.filter"].frame.midY, heading.frame.midY, accuracy: 10)
         XCTAssertEqual(tabs.buttons.count, 4)
         XCTAssertFalse(app.segmentedControls["assignments.filter"].exists)
         app.buttons["assignments.sort"].tap()
@@ -36,6 +39,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         }
         XCTAssertTrue(last.isHittable)
         XCTAssertLessThanOrEqual(last.frame.maxY, tabs.frame.minY + 2, "The final assignment must scroll above the native tab bar")
+        XCTAssertTrue(app.buttons["assignments.filter"].isHittable, "The category remains accessible beside the collapsed title")
         capture("All — final row clear of native tabs")
         category("Completed", app)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Finished problem set"))

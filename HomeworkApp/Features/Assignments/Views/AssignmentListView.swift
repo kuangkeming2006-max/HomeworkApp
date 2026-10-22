@@ -52,7 +52,6 @@ struct AssignmentListView: View {
                         .accessibilityIdentifier("assignments.empty")
                 }
             }
-            .safeAreaInset(edge: .top, spacing: 0) { categoryMenu }
         }
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search title, course or notes")
         .onChange(of: store.assignments, initial: true) { _, _ in rebuild(animated: true) }
@@ -79,7 +78,13 @@ struct AssignmentListView: View {
             }
         }
         .navigationTitle("Assignments").navigationBarTitleDisplayMode(.large)
-        .toolbar { if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) } }
+        .toolbar {
+            ToolbarItem(placement: .largeTitle) { assignmentHeading(large: true) }
+                .sharedBackgroundVisibility(.hidden)
+            ToolbarItem(placement: .title) { assignmentHeading(large: false) }
+                .sharedBackgroundVisibility(.hidden)
+            if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) }
+        }
         .attachmentPreview(preview)
         .navigationDestination(isPresented: $adding) {
             AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store)
@@ -89,8 +94,13 @@ struct AssignmentListView: View {
         }
     }
 
-    private var categoryMenu: some View {
-        HStack {
+    private func assignmentHeading(large: Bool) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: large ? 12 : 6) {
+            Text("Assignments")
+                .font(large ? .largeTitle.bold() : .headline)
+                .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.5)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: large ? 8 : 0)
             Menu {
                 Picker("Category", selection: Binding(get: { category }, set: {
                     if let toolbar { toolbar.category = $0 } else { fallbackCategory = $0 }
@@ -99,16 +109,16 @@ struct AssignmentListView: View {
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Text(category.rawValue).font(.headline)
+                    Text(category.rawValue).lineLimit(1).minimumScaleFactor(0.65)
                     Image(systemName: "chevron.down").font(.caption.weight(.semibold))
                 }
+                .font(large ? .subheadline.weight(.semibold) : .caption.weight(.semibold))
                 .foregroundStyle(.tint).frame(minHeight: 44).contentShape(Rectangle())
             }
-            .buttonStyle(.borderless).accessibilityIdentifier("assignments.filter")
+            .buttonStyle(.plain).accessibilityIdentifier("assignments.filter")
             .accessibilityLabel("Category").accessibilityValue(category.rawValue)
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 16).background(.bar, ignoresSafeAreaEdges: [])
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var rowTransition: AnyTransition {
