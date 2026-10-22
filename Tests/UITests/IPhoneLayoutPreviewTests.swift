@@ -7,6 +7,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         continueAfterFailure = false
         let app = launch()
         let tabs = app.tabBars.firstMatch
+        let titleY = app.navigationBars["Assignments"].staticTexts["Assignments"].frame.minY
         XCTAssertEqual(tabs.buttons.count, 4)
         XCTAssertFalse(app.segmentedControls["assignments.filter"].exists)
         app.buttons["assignments.sort"].tap()
@@ -28,6 +29,11 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.completed"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.abandoned"].exists)
         capture("All — continuous colored status sections")
+        let last = openRows(app).matching(NSPredicate(format: "label CONTAINS 'Optional reading'")).firstMatch
+        app.collectionViews["assignments.list"].swipeUp()
+        XCTAssertTrue(last.isHittable)
+        XCTAssertLessThanOrEqual(last.frame.maxY, tabs.frame.minY + 2, "The final assignment must scroll above the native tab bar")
+        capture("All — last row clear of tabs and native compact title")
         category("Completed", app)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Finished problem set"))
         XCTAssertEqual(openRows(app).count, 1)
@@ -38,7 +44,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         category("Upcoming", app)
         XCTAssertEqual(openRows(app).count, 2)
         let title = app.navigationBars["Assignments"].staticTexts["Assignments"]
-        let titleY = title.frame.minY
+        XCTAssertTrue(title.isHittable)
         capture("Upcoming — native title and borderless category")
         for _ in 0..<2 {
             tabs.buttons["Calendar"].tap()
@@ -239,6 +245,11 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.buttons["calendar.today"].tap()
         XCTAssertEqual(selectedDays(app).count, 1)
         capture("Calendar — dark Reduce Motion and accessibility text")
+        app.scrollViews.firstMatch.swipeUp()
+        let details = app.staticTexts["calendar.selectedDate"]
+        XCTAssertTrue(details.isHittable)
+        XCTAssertLessThanOrEqual(details.frame.maxY, app.tabBars.firstMatch.frame.minY + 2)
+        capture("Calendar — accessible details scrolled clear of tabs")
     }
 
     private func launch(_ extra: [String] = []) -> XCUIApplication {
