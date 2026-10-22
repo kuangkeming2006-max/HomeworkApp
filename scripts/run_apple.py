@@ -106,7 +106,8 @@ def simulator(args):
         env = {"TEST_ORIENTATION": args.orientation}
         filters = {
             "all": [],
-            "header": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests/testAnchoredMenusFilteringAndRepeatedToolbars"],
+            "header": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests/testAnchoredMenusFilteringAndCollapsingTitle",
+                       "-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests/testRepeatedToolbarsAndPullToSearch"],
             "preview": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests",
                         "-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
                         "-only-testing:HomeworkAppUITests/AssignmentFlowTests",

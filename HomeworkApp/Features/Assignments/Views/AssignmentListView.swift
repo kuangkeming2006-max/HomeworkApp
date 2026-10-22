@@ -12,7 +12,7 @@ struct AssignmentListView: View {
     @State private var projection = AssignmentListProjection()
     @State private var preview = AttachmentPreviewModel()
     @State private var visibleIDs: Set<UUID> = []
-    @State private var titleLayout = NavigationTitleLayout()
+    @State private var compactHeading = false
     @Environment(\.appReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
     @Environment(\.attachmentService) private var attachmentService
@@ -46,8 +46,15 @@ struct AssignmentListView: View {
             }
             .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
             .accessibilityIdentifier("assignments.list")
-            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, _ in titleLayout.refresh() }
-            .onScrollPhaseChange { _, _ in titleLayout.refresh() }
+            .onScrollGeometryChange(for: CGFloat.self) {
+                max(0, $0.contentOffset.y + $0.contentInsets.top)
+            } action: { _, distance in
+                // Insets change as native toolbar content collapses. Two thresholds
+                // prevent a layout update near the boundary from toggling it back.
+                if compactHeading {
+                    if distance < 8 { compactHeading = false }
+                } else if distance > 80 { compactHeading = true }
+            }
             .overlay {
                 if projection.isEmpty {
                     ContentUnavailableView(emptyTitle, systemImage: category == .deleted ? "trash" : "checklist",
@@ -87,18 +94,19 @@ struct AssignmentListView: View {
             ToolbarItem(placement: .largeTitle) {
                 Color.clear.frame(width: 1, height: 1).accessibilityHidden(true)
             }
-            ToolbarItem(placement: .largeSubtitle) { assignmentHeading(large: true) }
+            ToolbarItem(placement: .largeSubtitle) {
+                if compactHeading { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
+                else { assignmentHeading(large: true) }
+            }
                 .sharedBackgroundVisibility(.hidden)
             ToolbarItem(placement: .title) {
-                if titleLayout.isCompact { assignmentHeading(large: false) }
+                if compactHeading { assignmentHeading(large: false) }
                 else { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
             }
             .sharedBackgroundVisibility(.hidden)
             if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) }
         }
         .attachmentPreview(preview)
-        .background(NavigationTitleLayoutReader(layout: titleLayout))
-        .onDisappear { titleLayout.deactivate() }
         .navigationDestination(isPresented: $adding) {
             AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store)
         }

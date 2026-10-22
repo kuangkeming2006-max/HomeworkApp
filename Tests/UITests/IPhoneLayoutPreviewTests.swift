@@ -3,7 +3,7 @@ import XCTest
 /// Focused coverage and real simulator evidence for PR #1's native redesign.
 @MainActor
 final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
-    func testAnchoredMenusFilteringAndRepeatedToolbars() {
+    func testAnchoredMenusFilteringAndCollapsingTitle() {
         continueAfterFailure = false
         let app = launch(["--fixture-assignments"])
         let tabs = app.tabBars.firstMatch
@@ -19,7 +19,6 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.85)).tap()
         let heading = app.staticTexts["assignments.heading.large"]
         XCTAssertTrue(heading.waitForExistence(timeout: 5))
-        let titleY = heading.frame.minY
         XCTAssertGreaterThan(app.buttons["assignments.filter"].frame.minX, heading.frame.maxX)
         XCTAssertEqual(app.buttons["assignments.filter"].frame.midY, heading.frame.midY, accuracy: 10)
         XCTAssertEqual(tabs.buttons.count, 4)
@@ -51,7 +50,13 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.abandoned"].exists)
         XCTAssertTrue(last.isHittable)
         XCTAssertLessThanOrEqual(last.frame.maxY, tabs.frame.minY + 2, "The final assignment must scroll above the native tab bar")
+        let compactTitle = app.staticTexts["assignments.heading.compact"]
+        XCTAssertTrue(compactTitle.isHittable, "A long list must collapse to the small native title")
+        XCTAssertLessThanOrEqual(compactTitle.frame.minX, 24)
+        XCTAssertLessThan(compactTitle.frame.maxY, 100)
+        XCTAssertFalse(app.staticTexts["assignments.heading.large"].isHittable)
         XCTAssertTrue(app.buttons["assignments.filter"].isHittable, "The category remains accessible beside the collapsed title")
+        XCTAssertGreaterThan(app.buttons["assignments.filter"].frame.minX, compactTitle.frame.maxX)
         capture("All — final row clear of native tabs")
         category("Completed", app)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Finished problem set"))
@@ -65,6 +70,15 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         let title = app.staticTexts["assignments.heading.large"].exists ? app.staticTexts["assignments.heading.large"] : app.navigationBars["Assignments"].staticTexts["Assignments"].firstMatch
         XCTAssertTrue(title.isHittable)
         capture("Upcoming — native title and borderless category")
+    }
+
+    func testRepeatedToolbarsAndPullToSearch() {
+        continueAfterFailure = false
+        let app = launch()
+        let tabs = app.tabBars.firstMatch
+        let heading = app.staticTexts["assignments.heading.large"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5))
+        let titleY = heading.frame.minY
         for _ in 0..<2 {
             tabs.buttons["Calendar"].tap()
             XCTAssertTrue(app.buttons["calendar.today"].isHittable)
