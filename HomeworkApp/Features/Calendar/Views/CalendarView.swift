@@ -17,22 +17,7 @@ struct CalendarView: View {
     var body: some View {
         TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    CalendarMonthPager(model: model, onPickMonth: { showDetails(); selectingMonth = true },
-                                       onPagingChanged: pagingChanged, onNavigate: showDetails)
-                    Divider()
-                    ZStack(alignment: .topLeading) {
-                        dayDetails(now: context.date)
-                            .id(model.detailRevision)
-                            .transition(detailTransition)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .animation(detailAnimation, value: model.detailRevision)
-                    .opacity(detailsHidden ? 0 : 1)
-                    .blur(radius: detailsHidden && !reduceMotion ? 10 : 0)
-                    .allowsHitTesting(!detailsHidden).accessibilityHidden(detailsHidden)
-                }
-                .padding().frame(maxWidth: 900).frame(maxWidth: .infinity)
+                calendarContent(now: context.date)
             }
             .onChange(of: context.date, initial: true) { _, date in model.rebuild(store.assignments, now: date) }
             .onChange(of: store.assignments) { _, values in
@@ -66,8 +51,32 @@ struct CalendarView: View {
                 showDetails(); withAnimation(detailAnimation) { model.selectMonth($0) }
             }
         }
+        .onAppear { showDetails() }
         .onDisappear { revealTask?.cancel() }
         .attachmentPreview(preview)
+    }
+
+    private func calendarContent(now: Date) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            CalendarMonthPager(model: model, onPickMonth: { showDetails(); selectingMonth = true },
+                               onPagingChanged: pagingChanged, onNavigate: showDetails)
+            Divider()
+            detailPresentation(now: now)
+        }
+        .padding().frame(maxWidth: 900).frame(maxWidth: .infinity)
+    }
+
+    private func detailPresentation(now: Date) -> some View {
+        ZStack(alignment: .topLeading) {
+            dayDetails(now: now)
+                .id(model.detailRevision)
+                .transition(detailTransition)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .animation(detailAnimation, value: model.detailRevision)
+        .opacity(detailsHidden ? 0 : 1)
+        .blur(radius: detailsHidden && !reduceMotion ? 10 : 0)
+        .allowsHitTesting(!detailsHidden).accessibilityHidden(detailsHidden)
     }
 
     private func dayDetails(now: Date) -> some View {

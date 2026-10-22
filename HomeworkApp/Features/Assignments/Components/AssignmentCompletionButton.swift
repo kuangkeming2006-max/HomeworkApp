@@ -28,7 +28,7 @@ struct AssignmentCompletionButton: View {
                                     .scaleEffect(1 - progress * 0.8).opacity(1 - progress)
                             }
                         }.opacity(reduceMotion || reaction == 0 ? 0 : 1)
-                    } keyframes: {
+                    } keyframes: { _ in
                         MoveKeyframe(CGFloat.zero)
                         CubicKeyframe(CGFloat(1), duration: 0.45)
                     }

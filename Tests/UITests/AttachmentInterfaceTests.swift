@@ -60,7 +60,7 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed)
         capture(app, "Native photo picker", includeTree: false)
         pickerCancel.tap()
-        let editorCancel = app.navigationBars["New assignment"].buttons["Cancel"]
+        let editorCancel = app.buttons["editor.back"]
         XCTAssertTrue(editorCancel.waitForExistence(timeout: 5))
         let files = app.buttons["attachments.files"]
         XCTAssertTrue(files.waitForExistence(timeout: 5))

@@ -140,6 +140,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         image.doubleTap()
         image.swipeDown()
         XCTAssertTrue(app.buttons["attachment.image.close"].exists, "Zoomed panning must not dismiss")
+        image.pinch(withScale: 1.3, velocity: 1)
         capture("Image — zoomed downward pan remains open")
         image.doubleTap()
         image.swipeDown()
@@ -166,6 +167,17 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.alerts.buttons["Discard Changes"].tap()
         XCTAssertEqual(thumbnails.count, 2, "Discard must preserve the original attachments")
         capture("Attachments — discarded removal preserves originals")
+        openRows(app).firstMatch.press(forDuration: 0.8)
+        app.buttons["Delete"].tap()
+        category("Deleted", app)
+        XCTAssertEqual(thumbnails.count, 2)
+        thumbnails.firstMatch.tap()
+        XCTAssertTrue(app.buttons["attachment.image.close"].waitForExistence(timeout: 5))
+        app.buttons["attachment.image.close"].tap()
+        capture("Deleted — recoverable assignment and original attachments")
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.recover.'")).firstMatch.tap()
+        category("Upcoming", app)
+        XCTAssertEqual(thumbnails.count, 2)
     }
 
     func testCalendarSwipesButtonsDatesAndHighlight() {

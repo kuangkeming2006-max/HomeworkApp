@@ -12,13 +12,13 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         let list = app.collectionViews["assignments.list"]
         let thumbnail = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.thumbnail.'")).firstMatch
         XCTAssertTrue(thumbnail.waitForExistence(timeout: 20))
-        app.buttons["navigation.settings"].tap()
+        app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.buttons["settings.accent"].waitForExistence(timeout: 5))
         app.buttons["settings.accent"].tap()
         XCTAssertTrue(app.buttons["settings.accent.orange"].waitForExistence(timeout: 5))
         app.buttons["settings.accent.orange"].tap()
         app.navigationBars["Theme color"].buttons.element(boundBy: 0).tap()
-        app.buttons["navigation.assignments"].tap()
+        app.tabBars.buttons["Assignments"].tap()
         XCTAssertTrue(thumbnail.waitForExistence(timeout: 5))
         thumbnail.tap()
         let close = app.buttons["attachment.image.close"]
@@ -76,18 +76,15 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(thumbnail.waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["assignments.add"].isHittable)
         XCTAssertTrue(app.buttons["assignments.ai"].isHittable)
-        let categories = app.segmentedControls["assignments.filter"]
+        let categories = app.buttons["assignments.filter"]
         XCTAssertTrue(categories.waitForExistence(timeout: 5))
-        XCTAssertEqual(categories.buttons.count, 3)
-        XCTAssertTrue(categories.buttons["Upcoming"].exists)
-        XCTAssertTrue(categories.buttons["Completed"].exists)
-        XCTAssertTrue(categories.buttons["Abandoned"].exists)
-        XCTAssertFalse(categories.buttons["All"].exists)
-        capture("Three categories and colored sections")
-        categories.buttons["Completed"].tap()
-        XCTAssertTrue(app.staticTexts["assignments.compactTitle"].waitForExistence(timeout: 5))
-        capture("Completed category and compact heading")
-        categories.buttons["Upcoming"].tap()
+        categories.tap()
+        for name in ["All", "Upcoming", "Completed", "Abandoned", "Deleted"] { XCTAssertTrue(app.buttons[name].exists) }
+        capture("Five native category choices")
+        app.buttons["Completed"].tap()
+        XCTAssertEqual(categories.value as? String, "Completed")
+        capture("Completed category")
+        selectCategory("Upcoming", app: app)
         list.swipeDown()
         thumbnail.tap()
         XCTAssertTrue(app.buttons["attachment.image.close"].waitForExistence(timeout: 10))
@@ -97,19 +94,9 @@ final class InteractionPreviewTests: HomeworkUITestCase {
 
         let status = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.complete.'")).firstMatch
         status.tap()
-        let complete = app.buttons["assignment.status.complete"]
-        let abandon = app.buttons["assignment.status.abandon"]
-        XCTAssertTrue(complete.waitForExistence(timeout: 5))
-        XCTAssertTrue(abandon.exists)
-        XCTAssertFalse(app.buttons["assignment.status.cancel"].exists)
-        XCTAssertFalse(app.buttons["Cancel"].exists)
-        XCTAssertGreaterThan(abandon.frame.minY, complete.frame.maxY)
-        capture("Fixed vertical status card")
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)).tap()
-        XCTAssertTrue(complete.waitForNonExistence(timeout: 5))
-        status.tap()
-        XCTAssertTrue(complete.waitForExistence(timeout: 5))
-        complete.tap()
+        XCTAssertEqual(status.value as? String, "Completed")
+        XCTAssertFalse(app.sheets.firstMatch.exists)
+        capture("Immediate checkmark without a sheet")
         XCTAssertTrue(app.buttons["assignments.undo"].waitForExistence(timeout: 5))
         capture("Undo countdown")
         app.buttons["assignments.undo"].tap()
@@ -127,7 +114,7 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         capture("Full swipe delete")
         app.buttons["assignments.undo"].tap()
 
-        app.buttons["navigation.calendar"].tap()
+        app.tabBars.buttons["Calendar"].tap()
         let month = app.buttons["calendar.month"]
         XCTAssertTrue(month.waitForExistence(timeout: 5))
         let selected = app.staticTexts["calendar.selectedDate"]
@@ -162,7 +149,7 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [selectedByTap], timeout: 5), .completed)
         capture("Calendar selected day")
 
-        app.buttons["navigation.settings"].tap()
+        app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.buttons["settings.appearance"].waitForExistence(timeout: 5))
         capture("Appearance settings")
         app.buttons["settings.appearance"].tap()
@@ -177,7 +164,7 @@ final class InteractionPreviewTests: HomeworkUITestCase {
         app.buttons["settings.accent.orange"].tap()
         capture("Selected orange theme")
         app.navigationBars["Theme color"].buttons.element(boundBy: 0).tap()
-        app.buttons["navigation.assignments"].tap()
+        app.tabBars.buttons["Assignments"].tap()
         capture("Assignments with restricted orange accent")
         firstRow.tap()
         let form = app.descendants(matching: .any).matching(identifier: "editor.form").firstMatch

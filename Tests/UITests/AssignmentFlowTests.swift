@@ -18,17 +18,18 @@ final class AssignmentFlowTests: HomeworkUITestCase {
         XCTAssertTrue(row.label.contains("Networking lab report"))
         let completion = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.complete.'")).firstMatch
         completion.tap()
-        app.buttons["Complete"].tap()
+        XCTAssertEqual(completion.value as? String, "Completed")
         selectCategory("Completed", app: app)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         completion.tap()
-        app.buttons["Restore"].tap()
         selectCategory("Upcoming", app: app)
         XCTAssertTrue(row.waitForExistence(timeout: 5))
         row.tap()
         XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "editor.title").firstMatch.value as? String, "Networking lab report")
         let course = app.descendants(matching: .any).matching(identifier: "editor.course").firstMatch
         course.tap(); course.typeText("Computer networks")
+        app.buttons["editor.save"].tap()
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
         app.terminate()
         // Disk durability is covered by hosted tests; UI fixtures intentionally use an in-memory store.
     }
