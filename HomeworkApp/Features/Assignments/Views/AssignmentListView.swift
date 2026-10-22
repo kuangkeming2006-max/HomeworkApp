@@ -108,8 +108,6 @@ struct AssignmentListView: View {
                 .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.5)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(large ? "assignments.heading.large" : "assignments.heading.compact")
-                // UIKit already exposes the inline navigation title to accessibility.
-                .accessibilityHidden(!large)
             Spacer(minLength: large ? 8 : 0)
             Menu {
                 Picker("Category", selection: Binding(get: { category }, set: {
@@ -130,6 +128,8 @@ struct AssignmentListView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.top, large ? 6 : 0)
+        .accessibilityElement(children: .contain)
+        .accessibilityHidden(false)
     }
 
     private var rowTransition: AnyTransition {

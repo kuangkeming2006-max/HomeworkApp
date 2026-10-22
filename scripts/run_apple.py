@@ -106,6 +106,7 @@ def simulator(args):
         env = {"TEST_ORIENTATION": args.orientation}
         filters = {
             "all": [],
+            "header": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests/testAnchoredMenusFilteringAndRepeatedToolbars"],
             "preview": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests",
                         "-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
                         "-only-testing:HomeworkAppUITests/AssignmentFlowTests",
@@ -171,7 +172,7 @@ def main():
     parser.add_argument("--orientation", choices=["portrait", "landscape"], default="portrait")
     parser.add_argument("--runtime", type=int, default=27)
     parser.add_argument("--device-name", help="Exact simulator model; create it on the selected installed runtime when needed")
-    parser.add_argument("--test-scope", choices=["all", "preview", "interfaces", "ai"], default="all")
+    parser.add_argument("--test-scope", choices=["all", "preview", "header", "interfaces", "ai"], default="all")
     args = parser.parse_args()
     ARTIFACTS.mkdir(exist_ok=True)
     if args.mode == "device":

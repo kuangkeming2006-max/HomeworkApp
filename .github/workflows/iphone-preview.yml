@@ -11,6 +11,12 @@ on:
       - 'scripts/**'
       - '.github/workflows/**'
   workflow_dispatch:
+    inputs:
+      test_scope:
+        description: Focused iPhone capture scope
+        type: choice
+        options: [preview, header]
+        default: preview
 permissions:
   contents: read
 concurrency:
@@ -35,7 +41,9 @@ jobs:
           set -o pipefail
           swift test --package-path Packages/HomeworkDomain 2>&1 | tee artifacts/domain-tests.log
       - name: Build, launch and capture changed iPhone interactions
-        run: python3 scripts/run_apple.py simulator --family phone --device-name "iPhone 15 Pro" --appearance light --orientation portrait --test-scope preview
+        env:
+          PREVIEW_SCOPE: ${{ inputs.test_scope || 'preview' }}
+        run: python3 scripts/run_apple.py simulator --family phone --device-name "iPhone 15 Pro" --appearance light --orientation portrait --test-scope "$PREVIEW_SCOPE"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
