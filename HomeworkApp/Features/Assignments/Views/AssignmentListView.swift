@@ -129,6 +129,7 @@ struct AssignmentListView: View {
             .accessibilityLabel("Category").accessibilityValue(category.rawValue)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.top, large ? 6 : 0)
     }
 
     private var rowTransition: AnyTransition {
