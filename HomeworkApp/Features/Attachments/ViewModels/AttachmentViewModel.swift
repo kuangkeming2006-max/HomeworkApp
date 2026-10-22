@@ -19,12 +19,6 @@ final class AttachmentViewModel {
     let previewPresentation = AttachmentPreviewModel()
     var references: [AttachmentReference] { draftReferences }
 
-    init(assignmentID: UUID, store: AssignmentStore, service: any AttachmentService) {
-        self.service = service
-        original = store.assignment(assignmentID)?.attachments ?? []
-        draftReferences = original
-    }
-
     init(service: any AttachmentService, references: [AttachmentReference] = [],
          draftChanged: @escaping ([AttachmentReference]) -> Void) {
         self.service = service; self.draftChanged = draftChanged
@@ -35,8 +29,6 @@ final class AttachmentViewModel {
         let files = staged, storage = service
         Task { for reference in files { try? await storage.remove(reference) } }
     }
-
-    func markCommitted() { staged.removeAll(); draftChanged = nil }
 
     /// Only after the record commits may old, unreferenced files be removed.
     func finishCommit(retaining paths: Set<String>) async {

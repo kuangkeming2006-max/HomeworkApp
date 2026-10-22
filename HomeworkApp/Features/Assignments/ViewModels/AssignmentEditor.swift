@@ -65,7 +65,4 @@ final class AssignmentEditor {
         } catch { validationMessage = error.localizedDescription; return false }
     }
 
-    // Compatibility for existing integrations; these are explicit commits, never timers.
-    @discardableResult func create() -> Bool { save() }
-    func flush() { save() }
 }

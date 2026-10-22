@@ -8,10 +8,6 @@ struct AttachmentList: View {
     @State private var importing = false
     @State private var photos: [PhotosPickerItem] = []
 
-    init(assignmentID: UUID, store: AssignmentStore, service: any AttachmentService) {
-        _model = State(initialValue: AttachmentViewModel(assignmentID: assignmentID, store: store, service: service))
-    }
-
     init(model: AttachmentViewModel) { _model = State(initialValue: model) }
 
     var body: some View {

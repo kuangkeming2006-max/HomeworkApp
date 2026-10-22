@@ -54,9 +54,9 @@ final class AttachmentStagingTests: XCTestCase {
         let editor = AssignmentEditor(assignment: store.makeDraft(), isNew: true, store: store)
         let model = AttachmentViewModel(service: service) { editor.set(\.attachments, $0) }
         await model.importFiles(.success([source]))
-        XCTAssertFalse(editor.create()); XCTAssertEqual(model.references.count, 1)
-        editor.set(\.title, "Report"); XCTAssertTrue(editor.create())
-        model.markCommitted(); await model.close()
+        XCTAssertFalse(editor.save()); XCTAssertEqual(model.references.count, 1)
+        editor.set(\.title, "Report"); XCTAssertTrue(editor.save())
+        await model.finishCommit(retaining: store.retainedAttachmentPaths); await model.close()
         let saved = try XCTUnwrap(store.assignments.first?.attachments.first)
         let url = try await service.url(for: saved)
         XCTAssertEqual(try String(contentsOf: url, encoding: .utf8), "Notes")

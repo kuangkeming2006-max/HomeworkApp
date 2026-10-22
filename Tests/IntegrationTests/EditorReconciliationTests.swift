@@ -11,7 +11,7 @@ final class EditorReconciliationTests: XCTestCase {
         try repository.save([task])
         let store = try AssignmentStore(repository: repository)
         let editor = AssignmentEditor(assignment: task, isNew: false, store: store)
-        editor.set(\.notes, "Keep these notes"); editor.setStatus(.completed); editor.flush()
+        editor.set(\.notes, "Keep these notes"); editor.setStatus(.completed); XCTAssertTrue(editor.save())
         XCTAssertEqual(store.assignment(task.id)?.status, .completed)
         store.undoLatest()
         XCTAssertEqual(store.assignment(task.id)?.status, .active)
@@ -27,7 +27,7 @@ final class EditorReconciliationTests: XCTestCase {
         store.setStatus(task.id, to: .abandoned)
         editor.reconcile(try XCTUnwrap(store.assignment(task.id)))
         XCTAssertEqual(editor.draft.status, .abandoned); XCTAssertEqual(editor.draft.notes, "Pending notes")
-        editor.flush()
+        XCTAssertTrue(editor.save())
         XCTAssertEqual(store.assignment(task.id)?.status, .abandoned)
         XCTAssertEqual(store.assignment(task.id)?.notes, "Pending notes")
     }
@@ -40,7 +40,7 @@ final class EditorReconciliationTests: XCTestCase {
         let editor = AssignmentEditor(assignment: task, isNew: false, store: store)
         editor.setStatus(.completed)
         store.setStatus(task.id, to: .abandoned)
-        editor.flush()
+        XCTAssertFalse(editor.save())
         XCTAssertNotNil(editor.validationMessage)
         XCTAssertEqual(store.assignment(task.id)?.status, .abandoned)
     }
