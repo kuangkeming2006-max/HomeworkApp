@@ -7,8 +7,10 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         continueAfterFailure = false
         let app = launch()
         let tabs = app.tabBars.firstMatch
-        let titleY = app.navigationBars["Assignments"].staticTexts["Assignments"].frame.minY
-        let heading = app.navigationBars["Assignments"].staticTexts["Assignments"]
+        capture("Assignments — category beside title without background")
+        let heading = app.staticTexts["assignments.heading.large"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 5))
+        let titleY = heading.frame.minY
         XCTAssertGreaterThan(app.buttons["assignments.filter"].frame.minX, heading.frame.maxX)
         XCTAssertEqual(app.buttons["assignments.filter"].frame.midY, heading.frame.midY, accuracy: 10)
         XCTAssertEqual(tabs.buttons.count, 4)
@@ -50,7 +52,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["assignments.empty"].exists)
         category("Upcoming", app)
         XCTAssertEqual(openRows(app).count, 2)
-        let title = app.navigationBars["Assignments"].staticTexts["Assignments"]
+        let title = app.staticTexts["assignments.heading.large"].exists ? app.staticTexts["assignments.heading.large"] : app.navigationBars["Assignments"].staticTexts["Assignments"].firstMatch
         XCTAssertTrue(title.isHittable)
         capture("Upcoming — native title and borderless category")
         for _ in 0..<2 {

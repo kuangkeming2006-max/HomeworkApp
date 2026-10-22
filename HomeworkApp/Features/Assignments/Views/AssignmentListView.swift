@@ -12,6 +12,7 @@ struct AssignmentListView: View {
     @State private var projection = AssignmentListProjection()
     @State private var preview = AttachmentPreviewModel()
     @State private var visibleIDs: Set<UUID> = []
+    @State private var titleLayout = NavigationTitleLayout()
     @Environment(\.appReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
     @Environment(\.attachmentService) private var attachmentService
@@ -45,6 +46,8 @@ struct AssignmentListView: View {
             }
             .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
             .accessibilityIdentifier("assignments.list")
+            .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y } action: { _, _ in titleLayout.refresh() }
+            .onScrollPhaseChange { _, _ in titleLayout.refresh() }
             .overlay {
                 if projection.isEmpty {
                     ContentUnavailableView(emptyTitle, systemImage: category == .deleted ? "trash" : "checklist",
@@ -81,11 +84,15 @@ struct AssignmentListView: View {
         .toolbar {
             ToolbarItem(placement: .largeTitle) { assignmentHeading(large: true) }
                 .sharedBackgroundVisibility(.hidden)
-            ToolbarItem(placement: .title) { assignmentHeading(large: false) }
-                .sharedBackgroundVisibility(.hidden)
+            if titleLayout.isCompact {
+                ToolbarItem(placement: .title) { assignmentHeading(large: false) }
+                    .sharedBackgroundVisibility(.hidden)
+            }
             if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) }
         }
         .attachmentPreview(preview)
+        .background(NavigationTitleLayoutReader(layout: titleLayout))
+        .onDisappear { titleLayout.deactivate() }
         .navigationDestination(isPresented: $adding) {
             AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store)
         }
@@ -100,6 +107,9 @@ struct AssignmentListView: View {
                 .font(large ? .largeTitle.bold() : .headline)
                 .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.5)
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier(large ? "assignments.heading.large" : "assignments.heading.compact")
+                // UIKit already exposes the inline navigation title to accessibility.
+                .accessibilityHidden(!large)
             Spacer(minLength: large ? 8 : 0)
             Menu {
                 Picker("Category", selection: Binding(get: { category }, set: {
