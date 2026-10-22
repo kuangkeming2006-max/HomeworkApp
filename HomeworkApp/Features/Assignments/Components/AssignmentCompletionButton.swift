@@ -18,7 +18,7 @@ struct AssignmentCompletionButton: View {
                 .font(.title2).contentTransition(.symbolEffect(.replace))
                 .frame(minWidth: 32, minHeight: 44)
                 .overlay {
-                    Color.clear.keyframeAnimator(initialValue: CGFloat.zero, trigger: reaction) { _, progress in
+                    Color.clear.keyframeAnimator(initialValue: CGFloat.zero, trigger: reaction) { [reduceMotion, reaction] _, progress in
                         ZStack {
                             ForEach(0..<8) { index in
                                 Capsule().fill(index.isMultiple(of: 2) ? Color.green : Color.yellow)
