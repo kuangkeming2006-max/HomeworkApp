@@ -42,12 +42,13 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertEqual(app.buttons["assignments.filter"].value as? String, "All")
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.active"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.completed"].exists)
-        XCTAssertTrue(app.descendants(matching: .any)["assignments.section.abandoned"].exists)
         capture("All — continuous colored status sections")
         let last = openRows(app).matching(NSPredicate(format: "label CONTAINS 'Optional reading'")).firstMatch
         for _ in 0..<3 where !last.isHittable || last.frame.maxY > tabs.frame.minY + 2 {
             app.collectionViews["assignments.list"].swipeUp()
         }
+        // Native List materializes the final section only after scrolling to it.
+        XCTAssertTrue(app.descendants(matching: .any)["assignments.section.abandoned"].exists)
         XCTAssertTrue(last.isHittable)
         XCTAssertLessThanOrEqual(last.frame.maxY, tabs.frame.minY + 2, "The final assignment must scroll above the native tab bar")
         XCTAssertTrue(app.buttons["assignments.filter"].isHittable, "The category remains accessible beside the collapsed title")
