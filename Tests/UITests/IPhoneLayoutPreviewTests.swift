@@ -23,7 +23,8 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.85)).tap()
         let allPosition = app.coordinate(withNormalizedOffset: .zero)
             .withOffset(CGVector(dx: allFrame.midX, dy: allFrame.midY))
-        app.buttons["assignments.filter"].press(forDuration: 0.8, thenDragTo: allPosition)
+        app.buttons["assignments.filter"].coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 0.8, thenDragTo: allPosition)
         XCTAssertEqual(app.buttons["assignments.filter"].value as? String, "All")
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.active"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.completed"].exists)
@@ -273,6 +274,10 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'calendar.day.' AND selected == true"))
     }
     private func capture(_ name: String) {
+        // Capture the resting native presentation; production transitions have no delay.
+        let settledAt = Date().addingTimeInterval(0.45)
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in Date() >= settledAt }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 2), .completed)
         let image = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         image.name = name; image.lifetime = .keepAlways; add(image)
     }
