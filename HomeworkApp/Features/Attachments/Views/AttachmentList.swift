@@ -49,20 +49,20 @@ struct AttachmentList: View {
             HStack(spacing: 0) {
                 PhotosPicker(selection: $photos, maxSelectionCount: 5, matching: .images) {
                     Label("Photos", systemImage: "photo.badge.plus")
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.borderless).disabled(model.busy)
                 .accessibilityIdentifier("attachments.photos")
                 Button { importing = true } label: {
                     Label("Files", systemImage: "folder.badge.plus")
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .trailing)
+                        .frame(maxWidth: .infinity, minHeight: 24, alignment: .trailing)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.borderless).disabled(model.busy)
                 .accessibilityIdentifier("attachments.files")
             }
-            .overlay { Rectangle().fill(Color.secondary.opacity(0.25)).frame(width: 1, height: 24).allowsHitTesting(false) }
+            .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
             if model.busy { ProgressView("Importing…") }
             if let message = model.errorMessage { Text(message).foregroundStyle(.red) }
         }

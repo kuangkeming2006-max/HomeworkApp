@@ -7,10 +7,9 @@ import HomeworkDomain
 
 @Observable @MainActor
 final class AttachmentViewModel {
-    private let assignmentID: UUID?
-    private let store: AssignmentStore?
     private let service: any AttachmentService
-    private var draftReferences: [AttachmentReference] = []
+    private var draftReferences: [AttachmentReference]
+    private let original: [AttachmentReference]
     private var draftChanged: (([AttachmentReference]) -> Void)?
     private var staged: [AttachmentReference] = []
     private var closed = false
@@ -18,27 +17,37 @@ final class AttachmentViewModel {
     var errorMessage: String?
     var pendingRemoval: AttachmentReference?
     let previewPresentation = AttachmentPreviewModel()
-    var references: [AttachmentReference] {
-        if let store, let assignmentID { return store.assignment(assignmentID)?.attachments ?? [] }
-        return draftReferences
-    }
+    var references: [AttachmentReference] { draftReferences }
 
     init(assignmentID: UUID, store: AssignmentStore, service: any AttachmentService) {
-        self.assignmentID = assignmentID; self.store = store; self.service = service
+        self.service = service
+        original = store.assignment(assignmentID)?.attachments ?? []
+        draftReferences = original
     }
 
-    init(service: any AttachmentService, draftChanged: @escaping ([AttachmentReference]) -> Void) {
+    init(service: any AttachmentService, references: [AttachmentReference] = [],
+         draftChanged: @escaping ([AttachmentReference]) -> Void) {
         self.service = service; self.draftChanged = draftChanged
-        assignmentID = nil; store = nil
+        original = references; draftReferences = references
     }
 
     isolated deinit {
-        let files = staged
-        let storage = service
+        let files = staged, storage = service
         Task { for reference in files { try? await storage.remove(reference) } }
     }
 
     func markCommitted() { staged.removeAll(); draftChanged = nil }
+
+    /// Only after the record commits may old, unreferenced files be removed.
+    func finishCommit(retaining paths: Set<String>) async {
+        closed = true
+        let unused = (original + staged).filter { !paths.contains($0.relativePath) }
+        staged.removeAll(); draftChanged = nil
+        for reference in unused {
+            do { try await service.remove(reference) }
+            catch { errorMessage = "Saved, but an unused attachment could not be cleaned up: \(error.localizedDescription)" }
+        }
+    }
 
     func close() async {
         closed = true
@@ -47,12 +56,12 @@ final class AttachmentViewModel {
     }
 
     func importFiles(_ result: Result<[URL], Error>) async {
-        guard !busy else { return }
+        guard !busy, !closed else { return }
         busy = true; errorMessage = nil; defer { busy = false }
         do {
             for url in try result.get() {
                 let reference = try await service.importFile(from: url)
-                try await commit(reference)
+                try await stage(reference)
             }
         } catch {
             if (error as? CocoaError)?.code != .userCancelled { errorMessage = error.localizedDescription }
@@ -60,7 +69,7 @@ final class AttachmentViewModel {
     }
 
     func importPhotos(_ items: [PhotosPickerItem]) async {
-        guard !busy, !items.isEmpty else { return }
+        guard !busy, !closed, !items.isEmpty else { return }
         busy = true; errorMessage = nil; defer { busy = false }
         do {
             for item in items {
@@ -69,29 +78,21 @@ final class AttachmentViewModel {
                 }
                 let type = item.supportedContentTypes.first ?? .image
                 let reference = try await service.importData(data, name: "Image.\(type.preferredFilenameExtension ?? "img")",
-                                                              contentType: type.identifier)
-                try await commit(reference)
+                                                            contentType: type.identifier)
+                try await stage(reference)
             }
         } catch { errorMessage = error.localizedDescription }
     }
 
-    private func commit(_ reference: AttachmentReference) async throws {
+    private func stage(_ reference: AttachmentReference) async throws {
         do {
             guard !closed else { try await service.remove(reference); return }
             guard references.count < 100 else { throw AssignmentError.invalid("An assignment can contain up to 100 attachments.") }
             if references.contains(where: { $0.sha256 == reference.sha256 }) {
-                try await service.remove(reference)
-                return
+                try await service.remove(reference); return
             }
-            if let store, let assignmentID {
-                try store.update(assignmentID) { $0.attachments.append(reference) }
-            } else {
-                staged.append(reference); draftReferences.append(reference); draftChanged?(draftReferences)
-            }
-        } catch {
-            try? await service.remove(reference)
-            throw error
-        }
+            staged.append(reference); draftReferences.append(reference); draftChanged?(draftReferences)
+        } catch { try? await service.remove(reference); throw error }
     }
 
     func preview(_ reference: AttachmentReference) async {
@@ -99,15 +100,14 @@ final class AttachmentViewModel {
     }
 
     func remove(_ reference: AttachmentReference) async {
-        do {
-            if let store, let assignmentID {
-                try store.update(assignmentID) { $0.attachments.removeAll { $0.id == reference.id } }
-            } else {
-                draftReferences.removeAll { $0.id == reference.id }; staged.removeAll { $0.id == reference.id }
-                draftChanged?(draftReferences)
-            }
-            let stillReferenced = store?.assignments.contains { $0.deletedAt == nil && $0.attachments.contains { $0.relativePath == reference.relativePath } } ?? false
-            if !stillReferenced { try await service.remove(reference) }
-        } catch { errorMessage = error.localizedDescription }
+        draftReferences.removeAll { $0.id == reference.id }
+        draftChanged?(draftReferences)
+        // Existing files remain untouched until Save. Newly imported files are owned by this draft.
+        if staged.contains(where: { $0.id == reference.id }) {
+            do {
+                try await service.remove(reference)
+                staged.removeAll { $0.id == reference.id }
+            } catch { errorMessage = error.localizedDescription }
+        }
     }
 }

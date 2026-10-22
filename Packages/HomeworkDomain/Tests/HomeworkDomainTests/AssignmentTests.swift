@@ -26,6 +26,7 @@ final class AssignmentTests: XCTestCase {
         XCTAssertEqual(AssignmentQuery.apply([completed, deleted, active]).map(\.title), ["Active"])
         XCTAssertEqual(AssignmentQuery.apply([completed, deleted, active], filter: .completed).map(\.title), ["Completed"])
         XCTAssertEqual(AssignmentQuery.apply([completed, deleted, active], filter: .all).count, 2)
+        XCTAssertEqual(AssignmentQuery.apply([completed, deleted, active], filter: .deleted).map(\.id), [deleted.id])
     }
 
     func testValidationAndRoundTrip() throws {
