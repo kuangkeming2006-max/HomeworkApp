@@ -33,6 +33,7 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
                       "The PDF must render in Quick Look")
         capture(app, "PDF preview")
         closePreview.tap()
+        app.navigationBars["Assignment"].buttons.element(boundBy: 0).tap()
         if app.tabBars.buttons["Calendar"].exists { app.tabBars.buttons["Calendar"].tap() }
         else {
             if !app.staticTexts["Calendar"].firstMatch.exists { app.buttons["Show Sidebar"].tap() }

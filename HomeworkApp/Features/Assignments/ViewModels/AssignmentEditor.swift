@@ -39,7 +39,19 @@ final class AssignmentEditor {
 
     func reconcile(_ value: Assignment) {
         guard !isNew, value.id == draft.id else { return }
-        draft = AssignmentDraftMerge.displaying(base: base, draft: local, latest: value)
+        func rebase<Value: Equatable>(_ path: WritableKeyPath<Assignment, Value>) {
+            if local[keyPath: path] == base[keyPath: path] {
+                base[keyPath: path] = value[keyPath: path]
+                local[keyPath: path] = value[keyPath: path]
+            }
+        }
+        rebase(\.title); rebase(\.course); rebase(\.notes); rebase(\.dueDate)
+        rebase(\.dueTimeZone); rebase(\.priority); rebase(\.reminder)
+        if AssignmentDisposition(local) == AssignmentDisposition(base) {
+            base.status = value.status; base.completedAt = value.completedAt; base.abandonedAt = value.abandonedAt
+            local.status = value.status; local.completedAt = value.completedAt; local.abandonedAt = value.abandonedAt
+        }
+        draft = local
     }
 
     @discardableResult

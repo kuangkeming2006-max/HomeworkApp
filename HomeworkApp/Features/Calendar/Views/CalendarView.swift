@@ -10,6 +10,7 @@ struct CalendarView: View {
     @State private var revealTask: Task<Void, Never>?
     @State private var openedID: UUID?
     @State private var preview = AttachmentPreviewModel()
+    @Namespace private var detailNavigation
     @Environment(\.appReduceMotion) private var reduceMotion
     @Environment(\.attachmentService) private var attachmentService
     @Environment(\.workspaceToolbar) private var toolbar
@@ -41,6 +42,7 @@ struct CalendarView: View {
         .navigationDestination(isPresented: Binding(get: { openedID != nil }, set: { if !$0 { openedID = nil } })) {
             if let openedID, let assignment = store.assignment(openedID) {
                 AssignmentDetailView(assignment: assignment, store: store).id(openedID)
+                    .navigationTransition(.zoom(sourceID: openedID, in: detailNavigation))
             }
         }
         .sheet(isPresented: $adding) {
@@ -99,6 +101,7 @@ struct CalendarView: View {
                             AssignmentRow(assignment: assignment, now: now, onOpen: { openedID = assignment.id }, onPreview: { reference in
                                 Task { await preview.open(reference, service: attachmentService) }
                             })
+                            .matchedTransitionSource(id: assignment.id, in: detailNavigation)
                         }
                         Divider()
                     }

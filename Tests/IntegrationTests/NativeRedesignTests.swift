@@ -158,4 +158,35 @@ final class NativeRedesignTests: XCTestCase {
             XCTAssertEqual(toolbar.selectedSection, section)
         }
     }
+
+    func testReconciledFieldCanBeEditedBackToItsOriginalValue() throws {
+        let task = Assignment(title: "Original", dueDate: Date())
+        let store = try makeStore([task])
+        let editor = AssignmentEditor(assignment: task, isNew: false, store: store)
+        try store.update(task.id) { $0.title = "External" }
+        editor.reconcile(try XCTUnwrap(store.assignment(task.id)))
+        XCTAssertEqual(editor.draft.title, "External")
+        XCTAssertFalse(editor.hasChanges)
+        editor.set(\.title, "Original")
+        XCTAssertTrue(editor.hasChanges)
+        XCTAssertTrue(editor.save())
+        XCTAssertEqual(store.assignment(task.id)?.title, "Original")
+    }
+
+    func testConcurrentIdenticalCompletionKeepsThePersistedTimestamp() throws {
+        let task = Assignment(title: "Report", dueDate: Date())
+        var draft = task; draft.transition(to: .completed, at: task.createdAt.addingTimeInterval(1))
+        var latest = task; latest.transition(to: .completed, at: task.createdAt.addingTimeInterval(2))
+        let merged = try AssignmentDraftMerge.merge(base: task, draft: draft, latest: latest)
+        XCTAssertEqual(merged.completedAt, latest.completedAt)
+    }
+
+    func testRemovingExternallyModifiedAttachmentReportsConflict() throws {
+        var task = Assignment(title: "Report", dueDate: Date())
+        let original = AttachmentReference(name: "old.txt", relativePath: "old.txt", contentType: "public.plain-text", byteCount: 3, sha256: String(repeating: "a", count: 64))
+        task.attachments = [original]
+        var draft = task; draft.attachments = []
+        var latest = task; latest.attachments[0].name = "Updated elsewhere.txt"
+        XCTAssertThrowsError(try AssignmentDraftMerge.merge(base: task, draft: draft, latest: latest))
+    }
 }

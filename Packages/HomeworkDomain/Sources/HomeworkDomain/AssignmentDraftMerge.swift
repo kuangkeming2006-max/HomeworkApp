@@ -27,13 +27,21 @@ public enum AssignmentDraftMerge {
                   latest.status.canTransition(to: draft.status) else {
                 throw AssignmentError.invalid("Status changed elsewhere. Restore the assignment before choosing another status.")
             }
-            result.status = draft.status
-            result.completedAt = draft.completedAt
-            result.abandonedAt = draft.abandonedAt
+            if latest.status != draft.status {
+                result.status = draft.status
+                result.completedAt = draft.completedAt
+                result.abandonedAt = draft.abandonedAt
+            }
         }
         let originalIDs = Set(base.attachments.map(\.id))
         let editedIDs = Set(draft.attachments.map(\.id))
         let removed = originalIDs.subtracting(editedIDs)
+        for id in removed {
+            if let original = base.attachments.first(where: { $0.id == id }),
+               let current = latest.attachments.first(where: { $0.id == id }), current != original {
+                throw AssignmentError.invalid("An attachment changed elsewhere. Your draft is retained; review it before removing the updated attachment.")
+            }
+        }
         result.attachments.removeAll { removed.contains($0.id) }
         for reference in draft.attachments where !originalIDs.contains(reference.id) {
             if !result.attachments.contains(where: { $0.id == reference.id || $0.sha256 == reference.sha256 }) {
@@ -44,17 +52,4 @@ public enum AssignmentDraftMerge {
         return result
     }
 
-    /// Reflect unrelated external edits without rebasing away conflict information.
-    public static func displaying(base: Assignment, draft: Assignment, latest: Assignment) -> Assignment {
-        var value = draft
-        func field<Value: Equatable>(_ path: WritableKeyPath<Assignment, Value>) {
-            if draft[keyPath: path] == base[keyPath: path] { value[keyPath: path] = latest[keyPath: path] }
-        }
-        field(\.title); field(\.course); field(\.notes); field(\.dueDate)
-        field(\.dueTimeZone); field(\.priority); field(\.reminder)
-        if draft.status == base.status {
-            value.status = latest.status; value.completedAt = latest.completedAt; value.abandonedAt = latest.abandonedAt
-        }
-        return value
-    }
 }

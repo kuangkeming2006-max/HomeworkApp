@@ -107,6 +107,8 @@ def simulator(args):
         filters = {
             "all": [],
             "preview": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests",
+                        "-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
+                        "-only-testing:HomeworkAppUITests/AssignmentFlowTests",
                         "-only-testing:HomeworkAppTests/NativeRedesignTests",
                         "-only-testing:HomeworkAppTests/EditorReconciliationTests",
                         "-only-testing:HomeworkAppTests/AttachmentStagingTests",

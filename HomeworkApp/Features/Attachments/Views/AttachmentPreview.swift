@@ -34,7 +34,7 @@ private struct FullScreenImagePreview: View {
     @State private var pan: CGSize = .zero
     @State private var translation: CGSize = .zero
     @State private var zoomedDrag = false
-    @State private var pinching = false
+    @GestureState private var pinching = false
     @GestureState private var magnification: CGFloat = 1
 
     var body: some View {
@@ -82,9 +82,9 @@ private struct FullScreenImagePreview: View {
                     })
                 .simultaneousGesture(MagnifyGesture()
                     .updating($magnification) { value, state, _ in state = value.magnification }
-                    .onChanged { _ in pinching = true; zoomedDrag = true; drag = 0 }
+                    .updating($pinching) { _, state, _ in state = true }
+                    .onChanged { _ in zoomedDrag = true; drag = 0 }
                     .onEnded { value in
-                        pinching = false
                         withAnimation(spring) {
                             zoom = min(5, max(1, zoom * value.magnification))
                             pan = constrained(pan, scale: zoom, viewport: geometry.size)
@@ -114,6 +114,9 @@ private struct FullScreenImagePreview: View {
             }
         }
         .statusBarHidden()
+        .onChange(of: pinching) { _, active in
+            if !active, zoom <= 1.01 { zoomedDrag = false; pan = .zero; translation = .zero }
+        }
         .accessibilityAction(.escape) { dismiss() }
         .task(id: reference.id) {
             await model.load(reference, service: service)
