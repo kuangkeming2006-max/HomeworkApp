@@ -23,7 +23,18 @@ struct AssignmentListView: View {
 
     var body: some View {
         TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
+          GeometryReader { viewport in
+            let visibleTop = viewport.frame(in: .global).minY + viewport.safeAreaInsets.top
             List {
+                assignmentHeading(large: true)
+                    .id("assignments.heading.row")
+                    .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 10, trailing: 16))
+                    .listRowSeparator(.hidden)
+                    .onGeometryChange(for: CGPoint.self) { geometry in
+                        CGPoint(x: geometry.frame(in: .global).maxY, y: visibleTop)
+                    } action: { _, position in
+                        headingLayout.update(headerBottom: position.x, visibleTop: position.y)
+                    }
                 ForEach(projection.entries) { entry in
                     switch entry {
                     case .heading(let status):
@@ -46,26 +57,19 @@ struct AssignmentListView: View {
             }
             .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
             .accessibilityIdentifier("assignments.list")
-            .onScrollGeometryChange(for: CGPoint.self) {
-                CGPoint(x: $0.contentOffset.y, y: $0.contentInsets.top)
-            } action: { _, position in
-                headingLayout.update(offset: position.x, topInset: position.y)
-            }
-            .onScrollPhaseChange { _, phase in
-                headingLayout.setScrolling(phase == .interacting || phase == .decelerating)
-            }
             .overlay {
                 if projection.isEmpty {
                     ContentUnavailableView(emptyTitle, systemImage: category == .deleted ? "trash" : "checklist",
                                            description: Text(search.isEmpty ? emptyDescription : "Try another title, course or note."))
                         .accessibilityIdentifier("assignments.empty")
+                        .allowsHitTesting(false)
                 }
             }
+          }
         }
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search title, course or notes")
         .onChange(of: store.assignments, initial: true) { _, _ in rebuild(animated: true) }
-        .onChange(of: category) { _, _ in headingLayout.reset(); rebuild(animated: true) }
-        .onChange(of: projection.isEmpty) { _, empty in if empty { headingLayout.reset() } }
+        .onChange(of: category) { _, _ in rebuild(animated: true) }
         .onChange(of: sort) { _, _ in rebuild(animated: true) }
         .onChange(of: search) { _, _ in projection.refilter(filter: category, search: search) }
         .onChange(of: toolbar?.sort, initial: true) { _, value in if let value { sort = value } }
@@ -88,28 +92,20 @@ struct AssignmentListView: View {
             }
         }
         .navigationTitle("Assignments")
-        .navigationBarTitleDisplayMode(headingLayout.isCompact ? .inline : .large)
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            // The native subtitle slot hosts interactive controls; the title string
-            // remains the navigation/back label while the row supplies its visual heading.
-            ToolbarItem(placement: .largeTitle) {
+            // Keep the semantic Back label. The large heading scrolls as real content;
+            // the fixed native bar receives ordinary leading text once it has left.
+            ToolbarItem(placement: .principal) {
                 Color.clear.frame(width: 1, height: 1).accessibilityHidden(true)
             }
-            ToolbarItem(placement: .title) {
+            ToolbarItem(placement: .topBarLeading) {
                 if headingLayout.isCompact { assignmentHeading(large: false) }
-                else { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
             }
             .sharedBackgroundVisibility(.hidden)
             if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) }
         }
         .attachmentPreview(preview)
-        .background(InteractiveNavigationSubtitle(content:
-            assignmentHeading(large: true)
-                .frame(height: headingLayout.isCompact ? 0 : nil).clipped()
-                .opacity(headingLayout.isCompact ? 0 : 1)
-                .allowsHitTesting(!headingLayout.isCompact)
-                .accessibilityHidden(headingLayout.isCompact)
-        ))
         .navigationDestination(isPresented: $adding) {
             AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store)
         }
@@ -143,8 +139,7 @@ struct AssignmentListView: View {
             .buttonStyle(.plain).accessibilityIdentifier("assignments.filter")
             .accessibilityLabel("Category").accessibilityValue(category.rawValue)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, large ? 6 : 0)
+        .frame(maxWidth: large ? .infinity : nil, alignment: .leading)
         .accessibilityElement(children: .contain)
         .accessibilityHidden(false)
     }
