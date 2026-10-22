@@ -8,6 +8,8 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         let app = launch(["--fixture-assignments"])
         let tabs = app.tabBars.firstMatch
         capture("Assignments — category beside title without background")
+        XCTAssertFalse(app.searchFields.firstMatch.exists, "Search is revealed only by pulling down")
+        XCTAssertEqual(app.buttons.matching(identifier: "assignments.filter").count, 1)
         let categoryControl = app.buttons["assignments.filter"]
         if categoryControl.waitForExistence(timeout: 3) {
             categoryControl.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
@@ -99,6 +101,12 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.collectionViews["assignments.list"].swipeDown()
         XCTAssertTrue(app.searchFields.firstMatch.waitForExistence(timeout: 5))
         capture("Search — pull to reveal")
+        app.searchFields.firstMatch.tap()
+        app.searchFields.firstMatch.typeText("Earlier lab")
+        XCTAssertEqual(openRows(app).count, 1)
+        XCTAssertTrue(openRows(app).firstMatch.label.contains("Earlier lab report"))
+        app.buttons["Cancel"].tap()
+        XCTAssertEqual(openRows(app).count, 2)
     }
 
     func testImmediateCompletionDelayedRemovalUndoAndTabExit() {

@@ -9,11 +9,13 @@ struct AssignmentListView: View {
     @State private var adding = false
     @State private var addingAI = false
     @State private var search = ""
+    @State private var searchExpanded = false
     @State private var projection = AssignmentListProjection()
     @State private var preview = AttachmentPreviewModel()
     @State private var visibleIDs: Set<UUID> = []
     @State private var headingLayout = AssignmentHeadingLayout()
     @Environment(\.appReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var titleTypeSize
     @Environment(\.llmProviderFactory) private var providerFactory
     @Environment(\.attachmentService) private var attachmentService
     @Environment(\.workspaceToolbar) private var toolbar
@@ -24,17 +26,29 @@ struct AssignmentListView: View {
     var body: some View {
         TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
           GeometryReader { viewport in
-            let visibleTop = viewport.frame(in: .global).minY + viewport.safeAreaInsets.top
+            let visibleTop = max(viewport.frame(in: .global).minY, viewport.safeAreaInsets.top)
             List {
                 assignmentHeading(large: true)
                     .id("assignments.heading.row")
-                    .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 10, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
                     .listRowSeparator(.hidden)
-                    .onGeometryChange(for: CGPoint.self) { geometry in
-                        CGPoint(x: geometry.frame(in: .global).maxY, y: visibleTop)
-                    } action: { _, position in
-                        headingLayout.update(headerBottom: position.x, visibleTop: position.y)
+                    .listRowSeparatorTint(.clear)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { _, frame in
+                        headingLayout.update(headerBottom: frame.maxY, visibleTop: visibleTop)
+                        if !searchExpanded, frame.minY > visibleTop + 40 {
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = true }
+                        } else if searchExpanded, search.isEmpty, frame.maxY < visibleTop {
+                            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = false }
+                        }
                     }
+                if searchExpanded {
+                    AssignmentSearchField(text: $search) {
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = false }
+                    }
+                    .frame(height: 56)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+                    .listRowSeparator(.hidden).listRowSeparatorTint(.clear)
+                }
                 ForEach(projection.entries) { entry in
                     switch entry {
                     case .heading(let status):
@@ -56,6 +70,7 @@ struct AssignmentListView: View {
                 }
             }
             .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
+            .scrollBounceBehavior(.always, axes: .vertical)
             .accessibilityIdentifier("assignments.list")
             .overlay {
                 if projection.isEmpty {
@@ -67,7 +82,6 @@ struct AssignmentListView: View {
             }
           }
         }
-        .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search title, course or notes")
         .onChange(of: store.assignments, initial: true) { _, _ in rebuild(animated: true) }
         .onChange(of: category) { _, _ in rebuild(animated: true) }
         .onChange(of: sort) { _, _ in rebuild(animated: true) }
@@ -121,7 +135,7 @@ struct AssignmentListView: View {
                 .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.5)
                 .accessibilityAddTraits(.isHeader)
                 .accessibilityIdentifier(large ? "assignments.heading.large" : "assignments.heading.compact")
-            Spacer(minLength: large ? 8 : 0)
+            if large { Spacer(minLength: 8) }
             Menu {
                 Picker("Category", selection: Binding(get: { category }, set: {
                     if let toolbar { toolbar.category = $0 } else { fallbackCategory = $0 }
@@ -140,6 +154,8 @@ struct AssignmentListView: View {
             .accessibilityLabel("Category").accessibilityValue(category.rawValue)
         }
         .frame(maxWidth: large ? .infinity : nil, alignment: .leading)
+        .fixedSize(horizontal: !large, vertical: false)
+        .dynamicTypeSize(large ? titleTypeSize : min(titleTypeSize, .large))
         .accessibilityElement(children: .contain)
         .accessibilityHidden(false)
     }
@@ -184,6 +200,7 @@ struct AssignmentListView: View {
             }, onPreview: { reference in Task { await preview.open(reference, service: attachmentService) } })
         }
         .padding(.vertical, 3).listRowSeparator(.visible, edges: .bottom)
+        .listRowSeparator(.hidden, edges: .top)
         .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
         .alignmentGuide(.listRowSeparatorTrailing) { $0.width }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
