@@ -47,8 +47,8 @@ struct CalendarView: View {
             NavigationStack { AssignmentDetailView(assignment: store.makeDraft(on: model.selectedDate), isNew: true, store: store) }
         }
         .sheet(isPresented: $selectingMonth) {
-            MonthYearPicker(calendar: model.calendar, selected: model.month) {
-                showDetails(); withAnimation(detailAnimation) { model.selectMonth($0) }
+            MonthYearPicker(calendar: model.calendar, selected: model.month) { selectedMonth in
+                showDetails(); withAnimation(detailAnimation) { model.selectMonth(selectedMonth) }
             }
         }
         .onAppear { showDetails() }
