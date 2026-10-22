@@ -7,13 +7,11 @@ struct AssignmentDetailView: View {
     @State private var attachmentModel: AttachmentViewModel?
     @State private var closing = false
     @State private var confirmingExit = false
-    private let presentedAsNew: Bool
     @Environment(\.attachmentService) private var attachmentService
     private let store: AssignmentStore
 
     init(assignment: Assignment, isNew: Bool = false, store: AssignmentStore) {
         self.store = store
-        presentedAsNew = isNew
         _editor = State(initialValue: AssignmentEditor(assignment: assignment, isNew: isNew, store: store))
     }
 
@@ -76,12 +74,6 @@ struct AssignmentDetailView: View {
         .accessibilityIdentifier("editor.form")
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
-            if presentedAsNew {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Back", systemImage: "chevron.backward", action: requestExit)
-                        .disabled(closing).accessibilityIdentifier("editor.back")
-                }
-            }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save", systemImage: "checkmark", action: saveAndExit)
                     .disabled(closing || !editor.canSave || attachmentModel?.busy == true)
@@ -90,7 +82,6 @@ struct AssignmentDetailView: View {
         }
         .background(EditorDismissalGuard(needsConfirmation: editor.hasChanges || closing || attachmentModel?.busy == true,
                                          onAttempt: requestExit))
-        .interactiveDismissDisabled(editor.hasChanges || closing || attachmentModel?.busy == true)
         .alert("Save changes?", isPresented: $confirmingExit) {
             Button("Save", action: saveAndExit).disabled(!editor.canSave || attachmentModel?.busy == true)
             Button("Discard Changes", role: .destructive, action: discardAndExit)

@@ -44,8 +44,8 @@ struct CalendarView: View {
                 AssignmentDetailView(assignment: assignment, store: store).id(openedID)
             }
         }
-        .sheet(isPresented: $adding) {
-            NavigationStack { AssignmentDetailView(assignment: store.makeDraft(on: model.selectedDate), isNew: true, store: store) }
+        .navigationDestination(isPresented: $adding) {
+            AssignmentDetailView(assignment: store.makeDraft(on: model.selectedDate), isNew: true, store: store)
         }
         .sheet(isPresented: $selectingMonth) {
             MonthYearPicker(calendar: model.calendar, selected: model.month) { selectedMonth in

@@ -167,6 +167,7 @@ struct CalendarMonthPager: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
+        .accessibilityAddTraits(.isButton)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityLabel(Text(day, format: .dateTime.month(.wide).day().year()))
         .accessibilityValue(summary.accessibilitySummary.isEmpty ? "No assignments" : summary.accessibilitySummary)

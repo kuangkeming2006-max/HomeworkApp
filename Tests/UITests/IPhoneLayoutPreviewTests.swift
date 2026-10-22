@@ -31,7 +31,9 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.abandoned"].exists)
         capture("All — continuous colored status sections")
         let last = openRows(app).matching(NSPredicate(format: "label CONTAINS 'Optional reading'")).firstMatch
-        app.collectionViews["assignments.list"].swipeUp()
+        for _ in 0..<3 where !last.isHittable || last.frame.maxY > tabs.frame.minY + 2 {
+            app.collectionViews["assignments.list"].swipeUp()
+        }
         XCTAssertTrue(last.isHittable)
         XCTAssertLessThanOrEqual(last.frame.maxY, tabs.frame.minY + 2, "The final assignment must scroll above the native tab bar")
         capture("All — final row clear of native tabs")
@@ -135,13 +137,13 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         let newTitle = app.textFields["editor.title"].exists ? app.textFields["editor.title"] : app.textViews["editor.title"]
         XCTAssertTrue(newTitle.waitForExistence(timeout: 5))
         newTitle.tap(); newTitle.typeText("Explicitly saved new assignment")
-        app.buttons["editor.back"].tap()
+        app.navigationBars["New assignment"].buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.alerts["Save changes?"].waitForExistence(timeout: 5))
         app.alerts.buttons["Keep Editing"].tap()
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08))
-            .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7)))
-        XCTAssertTrue(app.alerts["Save changes?"].waitForExistence(timeout: 5), "A dirty sheet must report attempted interactive dismissal")
-        capture("New draft — interactive dismissal asks before saving")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.001, dy: 0.45))
+            .press(forDuration: 0.1, thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.45)))
+        XCTAssertTrue(app.alerts["Save changes?"].waitForExistence(timeout: 5), "A new draft must use the same protected native Back gesture")
+        capture("New draft — native interactive Back asks before saving")
         app.alerts.buttons["Save"].tap()
         XCTAssertTrue(app.buttons["assignments.add"].waitForExistence(timeout: 5))
         XCTAssertTrue(openRows(app).matching(NSPredicate(format: "label CONTAINS 'Explicitly saved new assignment'")).firstMatch.exists)
@@ -281,10 +283,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         return app
     }
     private func category(_ name: String, _ app: XCUIApplication) {
-        app.buttons["assignments.filter"].tap()
-        XCTAssertTrue(app.buttons[name].waitForExistence(timeout: 5))
-        app.buttons[name].tap()
-        XCTAssertEqual(app.buttons["assignments.filter"].value as? String, name)
+        selectCategory(name, app: app)
     }
     private func openRows(_ app: XCUIApplication) -> XCUIElementQuery {
         app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'"))

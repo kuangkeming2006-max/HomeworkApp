@@ -12,19 +12,17 @@ struct EditorDismissalGuard: UIViewControllerRepresentable {
         controller.needsConfirmation = needsConfirmation
         controller.onAttempt = onAttempt
         controller.install()
-        // SwiftUI updates its presentation delegate during the same update cycle.
+        // Install after SwiftUI has updated the native navigation item as well.
         DispatchQueue.main.async { [weak controller] in controller?.install() }
     }
     static func dismantleUIViewController(_ controller: Controller, coordinator: ()) { controller.restore() }
 
-    final class Controller: UIViewController, UIGestureRecognizerDelegate, UIAdaptivePresentationControllerDelegate {
+    final class Controller: UIViewController, UIGestureRecognizerDelegate {
         var needsConfirmation = false
         var onAttempt: () -> Void = {}
         private weak var owner: UIViewController?
         private var priorBack: UIAction?
         private var gestures: [(UIGestureRecognizer, (any UIGestureRecognizerDelegate)?)] = []
-        private weak var presentation: UIPresentationController?
-        private weak var priorPresentation: (any UIAdaptivePresentationControllerDelegate)?
 
         override func loadView() { view = UIView(); view.isUserInteractionEnabled = false }
         override func viewDidAppear(_ animated: Bool) { super.viewDidAppear(animated); install() }
@@ -43,31 +41,17 @@ struct EditorDismissalGuard: UIViewControllerRepresentable {
                     }
                 }
             }
-            // Reinstall independently of the Back hook, including after an alert or picker closes.
-            var ancestor: UIViewController? = navigation
-            while let controller = ancestor {
-                if controller.presentingViewController != nil, let presenter = controller.presentationController {
-                    if presenter.delegate !== self {
-                        presentation = presenter; priorPresentation = presenter.delegate; presenter.delegate = self
-                    }
-                    break
-                }
-                ancestor = controller.parent
-            }
         }
 
         func restore() {
             owner?.navigationItem.backAction = priorBack
             for (gesture, delegate) in gestures where gesture.delegate === self { gesture.delegate = delegate }
-            if presentation?.delegate === self { presentation?.delegate = priorPresentation }
-            gestures.removeAll(); owner = nil; presentation = nil
+            gestures.removeAll(); owner = nil
         }
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             guard needsConfirmation, navigationController?.topViewController === owner else { return true }
             onAttempt(); return false
         }
-        func presentationControllerShouldDismiss(_ presentationController: UIPresentationController) -> Bool { !needsConfirmation }
-        func presentationControllerDidAttemptToDismiss(_ presentationController: UIPresentationController) { onAttempt() }
     }
 }

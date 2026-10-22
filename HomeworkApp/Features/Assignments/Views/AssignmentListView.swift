@@ -81,8 +81,8 @@ struct AssignmentListView: View {
         .navigationTitle("Assignments").navigationBarTitleDisplayMode(.large)
         .toolbar { if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) } }
         .attachmentPreview(preview)
-        .sheet(isPresented: $adding) {
-            NavigationStack { AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store) }
+        .navigationDestination(isPresented: $adding) {
+            AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store)
         }
         .sheet(isPresented: $addingAI) {
             if let providerFactory { NavigationStack { AIImportView(store: store, providerFactory: providerFactory) } }
