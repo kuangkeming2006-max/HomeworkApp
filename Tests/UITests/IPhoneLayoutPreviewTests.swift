@@ -8,7 +8,12 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         let app = launch()
         let tabs = app.tabBars.firstMatch
         capture("Assignments — category beside title without background")
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.17)).tap()
+        let categoryControl = app.buttons["assignments.filter"]
+        if categoryControl.waitForExistence(timeout: 3) {
+            categoryControl.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        } else {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.17)).tap()
+        }
         XCTAssertTrue(app.buttons["All"].waitForExistence(timeout: 5), "The visible title menu must respond to an actual tap")
         capture("Categories — direct tap in the native large-title area")
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.85)).tap()

@@ -82,7 +82,12 @@ struct AssignmentListView: View {
         }
         .navigationTitle("Assignments").navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .largeTitle) { assignmentHeading(large: true) }
+            // The native subtitle slot hosts interactive controls; the title string
+            // remains the navigation/back label while the row supplies its visual heading.
+            ToolbarItem(placement: .largeTitle) {
+                Color.clear.frame(width: 1, height: 1).accessibilityHidden(true)
+            }
+            ToolbarItem(placement: .largeSubtitle) { assignmentHeading(large: true) }
                 .sharedBackgroundVisibility(.hidden)
             if titleLayout.isCompact {
                 ToolbarItem(placement: .title) { assignmentHeading(large: false) }
