@@ -106,7 +106,14 @@ def simulator(args):
         env = {"TEST_ORIENTATION": args.orientation}
         filters = {
             "all": [],
-            "preview": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests"],
+            "preview": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests",
+                        "-only-testing:HomeworkAppTests/NativeRedesignTests",
+                        "-only-testing:HomeworkAppTests/EditorReconciliationTests",
+                        "-only-testing:HomeworkAppTests/AttachmentStagingTests",
+                        "-only-testing:HomeworkAppTests/AttachmentTests",
+                        "-only-testing:HomeworkAppTests/PersistenceTests",
+                        "-only-testing:HomeworkAppTests/StatusMigrationTests",
+                        "-only-testing:HomeworkAppTests/CalendarTests"],
             "interfaces": ["-only-testing:HomeworkAppUITests/AttachmentInterfaceTests",
                            "-only-testing:HomeworkAppUITests/PerformanceLayoutTests"],
             "ai": ["-only-testing:HomeworkAppUITests/AIImportFlowTests"],
@@ -117,7 +124,7 @@ def simulator(args):
              "-parallel-testing-enabled", "NO", "CODE_SIGNING_ALLOWED=NO",
              "-collect-test-diagnostics", "never",
              "-test-timeouts-enabled", "YES", "-maximum-test-execution-time-allowance", "180",
-             f"TEST_ORIENTATION={args.orientation}"], "xcodebuild.log", extra_env=env, timeout=1200)
+             f"TEST_ORIENTATION={args.orientation}"], "xcodebuild.log", extra_env=env, timeout=1800)
     finally:
         collect_diagnostics(udid)
     screenshots = sorted((ARTIFACTS / "screenshots").rglob("*.png"))

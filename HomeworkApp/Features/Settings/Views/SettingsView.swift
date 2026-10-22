@@ -24,6 +24,7 @@ struct SettingsView: View {
                 .tint(.blue)
                 NavigationLink {
                     ThemeColorPicker(preferences: preferences)
+                        .toolbar(.hidden, for: .tabBar)
                 } label: {
                     HStack {
                         Text("Theme color").foregroundStyle(.primary)
@@ -37,12 +38,13 @@ struct SettingsView: View {
             Section("AI") {
                 NavigationLink("AI provider") {
                     AISettingsView(preferences: preferences, secrets: secrets, buildProvider: buildProvider)
+                        .toolbar(.hidden, for: .tabBar)
                 }
                     .accessibilityIdentifier("settings.ai")
             }
             if let backup = backupService {
                 Section("Data") {
-                    NavigationLink("Backup and restore") { BackupView(store: store, service: backup) }
+                    NavigationLink("Backup and restore") { BackupView(store: store, service: backup).toolbar(.hidden, for: .tabBar) }
                         .accessibilityIdentifier("settings.backup")
                 }
             }
@@ -78,7 +80,7 @@ struct SettingsView: View {
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("--preview-activities") {
                 Section("Layout testing") {
-                    NavigationLink("Live Activity layouts") { ActivityLayoutGallery() }
+                    NavigationLink("Live Activity layouts") { ActivityLayoutGallery().toolbar(.hidden, for: .tabBar) }
                         .accessibilityIdentifier("settings.activityLayouts")
                 }
             }

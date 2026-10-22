@@ -6,7 +6,8 @@ struct CalendarView: View {
     @State private var model = CalendarViewModel()
     @State private var adding = false
     @State private var selectingMonth = false
-    @State private var actionTarget: Assignment?
+    @State private var detailsHidden = false
+    @State private var revealTask: Task<Void, Never>?
     @State private var openedID: UUID?
     @State private var preview = AttachmentPreviewModel()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -17,15 +18,19 @@ struct CalendarView: View {
         TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    CalendarMonthPager(model: model, onPickMonth: { selectingMonth = true })
+                    CalendarMonthPager(model: model, onPickMonth: { showDetails(); selectingMonth = true },
+                                       onPagingChanged: pagingChanged, onNavigate: showDetails)
                     Divider()
                     ZStack(alignment: .topLeading) {
                         dayDetails(now: context.date)
-                            .id(model.selectedDate)
-                            .transition(.opacity)
+                            .id(model.detailRevision)
+                            .transition(reduceMotion ? .opacity : .blurReplace)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.26), value: model.selectedDate)
+                    .animation(detailAnimation, value: model.detailRevision)
+                    .opacity(detailsHidden ? 0 : 1)
+                    .blur(radius: detailsHidden && !reduceMotion ? 10 : 0)
+                    .allowsHitTesting(!detailsHidden).accessibilityHidden(detailsHidden)
                 }
                 .padding().frame(maxWidth: 900).frame(maxWidth: .infinity)
             }
@@ -43,9 +48,9 @@ struct CalendarView: View {
         .onChange(of: toolbar?.request) { _, request in
             guard let request, request.mode == .calendar else { return }
             switch request.action {
-            case .today: model.today()
+            case .today: showDetails(); withAnimation(detailAnimation) { model.today() }
             case .add: adding = true
-            case .ai, .sort: break
+            case .ai: break
             }
         }
         .navigationDestination(isPresented: Binding(get: { openedID != nil }, set: { if !$0 { openedID = nil } })) {
@@ -57,9 +62,11 @@ struct CalendarView: View {
             NavigationStack { AssignmentDetailView(assignment: store.makeDraft(on: model.selectedDate), isNew: true, store: store) }
         }
         .sheet(isPresented: $selectingMonth) {
-            MonthYearPicker(calendar: model.calendar, selected: model.month) { model.selectMonth($0) }
+            MonthYearPicker(calendar: model.calendar, selected: model.month) {
+                showDetails(); withAnimation(detailAnimation) { model.selectMonth($0) }
+            }
         }
-        .sheet(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
+        .onDisappear { revealTask?.cancel() }
         .attachmentPreview(preview)
     }
 
@@ -76,11 +83,9 @@ struct CalendarView: View {
                 LazyVStack(spacing: 16) {
                     ForEach(values) { assignment in
                         HStack(alignment: .center, spacing: 12) {
-                            Button { AppHaptics.selection(); actionTarget = assignment } label: {
-                                Image(systemName: assignment.status == .abandoned ? "minus.circle.fill" : assignment.isCompleted ? "checkmark.circle.fill" : "circle")
-                                    .font(.title2).frame(minWidth: 32, minHeight: 44)
+                            AssignmentCompletionButton(assignment: assignment) {
+                                withAnimation(detailAnimation) { store.toggleCompletion(assignment.id) }
                             }
-                            .accessibilityLabel("Change assignment status").accessibilityValue(assignment.status.label)
                             .accessibilityIdentifier("calendar.complete.\(assignment.id)")
                             AssignmentRow(assignment: assignment, now: now, onOpen: { openedID = assignment.id }, onPreview: { reference in
                                 Task { await preview.open(reference, service: attachmentService) }
@@ -89,6 +94,26 @@ struct CalendarView: View {
                         Divider()
                     }
                 }
+            }
+        }
+    }
+
+    private var detailAnimation: Animation { reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.38, dampingFraction: 0.9) }
+
+    private func showDetails() {
+        revealTask?.cancel(); revealTask = nil
+        withAnimation(detailAnimation) { detailsHidden = false }
+    }
+
+    private func pagingChanged(_ dragging: Bool) {
+        revealTask?.cancel(); revealTask = nil
+        if dragging {
+            withAnimation(detailAnimation) { detailsHidden = true }
+        } else {
+            revealTask = Task { @MainActor in
+                do { try await Task.sleep(for: .milliseconds(200)) } catch { return }
+                guard !Task.isCancelled else { return }
+                withAnimation(detailAnimation) { detailsHidden = false }
             }
         }
     }

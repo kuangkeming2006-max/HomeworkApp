@@ -51,18 +51,17 @@ struct AppNavigation: View {
         .tint(container.preferences.accent.color)
         .environment(\.appAccent, container.preferences.accent.color)
         .environment(\.workspaceToolbar, workspaceToolbar)
-        .preferredColorScheme(container.preferences.appearance.colorScheme)
+        .preferredColorScheme(effectiveColorScheme)
+        .environment(\.accessibilityReduceMotion, effectiveReduceMotion)
         .environment(\.dynamicTypeSize, effectiveTypeSize)
         .environment(\.attachmentService, container.attachmentService)
         .environment(\.llmProviderFactory, { [container] in try container.makeLLMProvider() })
         .onChange(of: scenePhase) { _, phase in
             container.setForeground(phase == .active)
         }
-        .onChange(of: selection) { _, section in
-            if let mode = toolbarMode(section) {
-                withAnimation(reduceMotion ? nil : .bouncy(duration: 0.28, extraBounce: 0.08)) {
-                    workspaceToolbar.mode = mode
-                }
+        .onChange(of: selection, initial: true) { _, section in
+            withAnimation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.75)) {
+                workspaceToolbar.activate(section?.rawValue ?? "Assignments")
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
@@ -92,6 +91,19 @@ struct AppNavigation: View {
         if args.contains("--uitesting"), args.contains("--large-type") { return .accessibility3 }
         #endif
         return systemTypeSize
+    }
+
+    private var effectiveReduceMotion: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--uitesting"), ProcessInfo.processInfo.arguments.contains("--reduce-motion") { return true }
+        #endif
+        return reduceMotion
+    }
+    private var effectiveColorScheme: ColorScheme? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--uitesting"), ProcessInfo.processInfo.arguments.contains("--dark") { return .dark }
+        #endif
+        return container.preferences.appearance.colorScheme
     }
 
     @ViewBuilder
@@ -164,6 +176,5 @@ struct AppNavigation: View {
         case .assignment(let id): selection = .assignments; requestedAssignment = .init(assignmentID: id)
         case .briefing: selection = .briefing
         }
-        if let mode = toolbarMode(selection) { workspaceToolbar.mode = mode }
     }
 }

@@ -5,139 +5,81 @@ struct AssignmentListView: View {
     let store: AssignmentStore
     let onOpen: (UUID) -> Void
     @State private var sort: AssignmentSort = .priority
+    @State private var fallbackCategory: AssignmentFilter = .upcoming
     @State private var adding = false
     @State private var addingAI = false
-    @State private var choosingSort = false
     @State private var search = ""
-    @State private var actionTarget: Assignment?
     @State private var projection = AssignmentListProjection()
     @State private var preview = AttachmentPreviewModel()
-    @State private var category: AssignmentStatus = .active
-    @State private var sectionHeaderPositions: [AssignmentStatus: CGFloat] = [:]
-    @State private var listOriginY: CGFloat?
-    @State private var listTopInset: CGFloat = 0
-    @State private var requestedCategory: AssignmentStatus?
-    @State private var hasUserScrolled = false
-    @State private var atBottom = false
-    @State private var atTop = true
+    @State private var visibleIDs: Set<UUID> = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.llmProviderFactory) private var providerFactory
     @Environment(\.attachmentService) private var attachmentService
     @Environment(\.workspaceToolbar) private var toolbar
 
-    private struct ListScrollMetrics: Equatable {
-        let topInset: CGFloat
-        let atTop: Bool
-        let atBottom: Bool
-    }
+    private var category: AssignmentFilter { toolbar?.category ?? fallbackCategory }
+    private var motion: Animation? { reduceMotion ? .easeOut(duration: 0.15) : .spring(response: 0.38, dampingFraction: 0.86) }
 
     var body: some View {
-        ScrollViewReader { proxy in
-            TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
+        TimelineView(.periodic(from: Date(timeIntervalSince1970: 0), by: 60)) { context in
             List {
-                ForEach(projection.sections) { section in
+                ForEach(projection.entries) { entry in
+                    switch entry {
+                    case .heading(let status):
                         HStack(spacing: 8) {
-                            Circle().fill(section.id.markerColor).frame(width: 8, height: 8)
-                            Text(section.title).font(.headline).foregroundStyle(.secondary)
+                            Circle().fill(status.markerColor).frame(width: 8, height: 8)
+                            Text(status.categoryTitle).font(.headline).foregroundStyle(.secondary)
                         }
-                            .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 12, trailing: 16))
-                            .listRowSeparator(.hidden)
-                            .accessibilityElement(children: .combine)
-                            .accessibilityAddTraits(.isHeader)
-                            .accessibilityIdentifier("assignments.section.\(section.id.rawValue)")
-                            .id(section.id)
-                            .onGeometryChange(for: CGFloat.self) { geometry in
-                                geometry.frame(in: .global).minY.rounded(.down)
-                            } action: { position in
-                                guard sectionHeaderPositions[section.id] != position else { return }
-                                sectionHeaderPositions[section.id] = position
-                                updateCategoryForScroll()
+                        .listRowInsets(EdgeInsets(top: 20, leading: 16, bottom: 12, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .accessibilityElement(children: .combine).accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("assignments.section.\(status.rawValue)")
+                    case .assignment(let assignment):
+                        row(assignment, now: context.date)
+                            .transition(reduceMotion ? .opacity : .blurReplace)
+                            .onScrollVisibilityChange(threshold: 0.01) { visible in
+                                if visible { visibleIDs.insert(assignment.id) } else { visibleIDs.remove(assignment.id) }
                             }
-                            .onDisappear {
-                                sectionHeaderPositions.removeValue(forKey: section.id)
-                            }
-                        if section.rows.isEmpty {
-                            Text(search.isEmpty ? "No \(section.title.lowercased()) assignments" : "No matching assignments")
-                                .font(.subheadline).foregroundStyle(.secondary).padding(.vertical, 14)
-                                .accessibilityIdentifier("assignments.empty.\(section.id.rawValue)")
-                        }
-                        ForEach(section.rows) { assignment in
-                            row(assignment, now: context.date)
-                                .id(assignment.id)
-                                .transition(.opacity.combined(with: .move(edge: .top)))
-                        }
+                    }
                 }
             }
-            .listStyle(.plain)
-            .contentMargins(.bottom, 16, for: .scrollContent)
+            .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
             .accessibilityIdentifier("assignments.list")
-            .safeAreaInset(edge: .top, spacing: 0) {
-                categoryPicker(proxy: proxy)
-            }
-            .onGeometryChange(for: CGFloat.self) { geometry in
-                geometry.frame(in: .global).minY.rounded(.down)
-            } action: { position in
-                guard listOriginY != position else { return }
-                listOriginY = position
-                updateCategoryForScroll()
-            }
-            .onScrollGeometryChange(for: ListScrollMetrics.self) { geometry in
-                ListScrollMetrics(topInset: geometry.contentInsets.top,
-                                  atTop: geometry.contentOffset.y + geometry.contentInsets.top <= 1,
-                                  atBottom: geometry.contentOffset.y + geometry.containerSize.height
-                                    >= geometry.contentSize.height + geometry.contentInsets.bottom - 1)
-            } action: { _, metrics in
-                atTop = metrics.atTop
-                atBottom = metrics.atBottom
-                if listTopInset != metrics.topInset {
-                    listTopInset = metrics.topInset
-                    updateCategoryForScroll()
+            .overlay {
+                if projection.isEmpty {
+                    ContentUnavailableView(emptyTitle, systemImage: category == .deleted ? "trash" : "checklist",
+                                           description: Text(search.isEmpty ? emptyDescription : "Try another title, course or note."))
+                        .accessibilityIdentifier("assignments.empty")
                 }
-                if hasUserScrolled { updateCategoryForScroll() }
             }
-            .onScrollPhaseChange { _, phase in
-                // A category jump owns selection until the next deliberate scroll.
-                // Intermediate header callbacks must not undo the user's choice.
-                if phase == .interacting { hasUserScrolled = true; requestedCategory = nil }
-                if phase == .idle, requestedCategory == nil { updateCategoryForScroll() }
-            }
-          }
+            .safeAreaInset(edge: .top, spacing: 0) { categoryMenu }
         }
         .searchable(text: $search, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search title, course or notes")
-        .onChange(of: store.assignments, initial: true) { _, values in
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.28)) {
-                projection.rebuild(values, sort: sort, search: search)
-            }
-        }
-        .onChange(of: sort) { _, _ in
-            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.24)) {
-                projection.rebuild(store.assignments, sort: sort, search: search)
-            }
-        }
-        .onChange(of: search) { _, _ in projection.refilter(search: search) }
+        .onChange(of: store.assignments, initial: true) { _, _ in rebuild(animated: true) }
+        .onChange(of: category) { _, _ in rebuild(animated: true) }
+        .onChange(of: sort) { _, _ in rebuild(animated: true) }
+        .onChange(of: search) { _, _ in projection.refilter(filter: category, search: search) }
         .onChange(of: toolbar?.sort, initial: true) { _, value in if let value { sort = value } }
+        .onChange(of: toolbar?.selectedSection) { _, section in
+            if section != "Assignments" { projection.clearPending(); rebuild(animated: false) }
+        }
+        .task(id: projection.nextExpiry) {
+            guard let date = projection.nextExpiry else { return }
+            do { try await Task.sleep(for: .seconds(max(0, date.timeIntervalSinceNow))) } catch { return }
+            guard !Task.isCancelled else { return }
+            let expired = projection.expire()
+            rebuild(animated: !expired.isDisjoint(with: visibleIDs))
+        }
         .onChange(of: toolbar?.request) { _, request in
             guard let request, request.mode == .assignments else { return }
             switch request.action {
             case .add: adding = true
             case .ai: addingAI = true
-            case .sort: choosingSort = true
             case .today: break
             }
         }
-        .navigationTitle("Assignments")
-        .navigationBarTitleDisplayMode(.large)
-        .toolbar {
-            if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) }
-        }
-        .sheet(item: $actionTarget) { AssignmentStatusSheet(assignment: $0, store: store) }
-        .confirmationDialog("Sort by", isPresented: $choosingSort, titleVisibility: .visible) {
-            ForEach(AssignmentSort.allCases) { option in
-                Button(option.rawValue) {
-                    if let toolbar { toolbar.sort = option } else { sort = option }
-                }
-            }
-        }
+        .navigationTitle("Assignments").navigationBarTitleDisplayMode(.large)
+        .toolbar { if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) } }
         .attachmentPreview(preview)
         .sheet(isPresented: $adding) {
             NavigationStack { AssignmentDetailView(assignment: store.makeDraft(), isNew: true, store: store) }
@@ -147,89 +89,103 @@ struct AssignmentListView: View {
         }
     }
 
-    private func categoryPicker(proxy: ScrollViewProxy) -> some View {
-        Picker("Category", selection: Binding(get: { category }, set: { next in
-            requestedCategory = next
-            category = next
-            // Native list scrolling clamps short terminal sections naturally.
-            // No viewport-sized spacer is inserted below the actual content.
-            // The separator is a concrete list row, so it is a reliable scroll
-            // target and cannot pin over the first assignment's title.
-            proxy.scrollTo(next, anchor: .top)
-        })) {
-            ForEach(AssignmentStatus.allCases) { Text($0.categoryTitle).tag($0) }
+    private var categoryMenu: some View {
+        HStack {
+            Menu {
+                Picker("Category", selection: Binding(get: { category }, set: {
+                    if let toolbar { toolbar.category = $0 } else { fallbackCategory = $0 }
+                })) {
+                    ForEach(AssignmentFilter.allCases) { Text($0.rawValue).tag($0) }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Text(category.rawValue).font(.headline)
+                    Image(systemName: "chevron.down").font(.caption.weight(.semibold))
+                }
+                .foregroundStyle(.tint).frame(minHeight: 44).contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless).accessibilityIdentifier("assignments.filter")
+            .accessibilityLabel("Category").accessibilityValue(category.rawValue)
+            Spacer(minLength: 0)
         }
-        .accessibilityIdentifier("assignments.filter")
-        .pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 8)
-        .background(.bar, ignoresSafeAreaEdges: [])
+        .padding(.horizontal, 16).background(.bar, ignoresSafeAreaEdges: [])
     }
 
-    private func updateCategoryForScroll() {
-        guard requestedCategory == nil, let listOriginY else { return }
-        if hasUserScrolled && atBottom && !atTop {
-            if category != .abandoned { category = .abandoned }
-            return
+    private var emptyTitle: String {
+        if !search.isEmpty { return "No matching assignments" }
+        switch category {
+        case .all: return "No assignments yet"
+        case .upcoming: return "You're all caught up"
+        case .completed: return "No completed assignments"
+        case .abandoned: return "No abandoned assignments"
+        case .deleted: return "No deleted assignments"
         }
-        let visibleTop = listOriginY + listTopInset
-        let pastTop = AssignmentStatus.allCases.last { status in
-            guard let position = sectionHeaderPositions[status] else { return false }
-            // Separator titles have a standard top row inset.
-            return position <= visibleTop + 24
+    }
+    private var emptyDescription: String {
+        switch category {
+        case .deleted: "Deleted assignments stay here until you restore them."
+        case .completed: "Assignments you complete will appear here."
+        case .abandoned: "Assignments you abandon will appear here."
+        default: "Add coursework to keep track of your deadlines."
         }
-        // Above the first header, the title area still belongs to Upcoming.
-        let next = pastTop ?? (sectionHeaderPositions[.active] != nil ? AssignmentStatus.active : nil)
-        if let next, category != next { category = next }
     }
 
     private func row(_ assignment: Assignment, now: Date) -> some View {
         HStack(alignment: .center, spacing: 12) {
-            Button {
-                AppHaptics.selection()
-                actionTarget = assignment
-            } label: {
-                Image(systemName: assignment.status == .abandoned ? "minus.circle.fill" :
-                      assignment.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.title2).frame(minWidth: 32, minHeight: 44)
+            if assignment.deletedAt != nil {
+                Button("Restore deleted assignment", systemImage: "arrow.uturn.backward.circle") {
+                    change { store.restoreDeleted(assignment.id) }
+                }
+                .labelStyle(.iconOnly).font(.title2).buttonStyle(.borderless)
+                .frame(minWidth: 32, minHeight: 44).accessibilityIdentifier("assignment.recover.\(assignment.id)")
+            } else {
+                AssignmentCompletionButton(assignment: assignment) { toggle(assignment) }
+                    .accessibilityIdentifier("assignment.complete.\(assignment.id)")
             }
-            .buttonStyle(.borderless)
-            .accessibilityLabel("Change assignment status").accessibilityValue(assignment.status.label)
-            .accessibilityIdentifier("assignment.complete.\(assignment.id)")
-            AssignmentRow(assignment: assignment, now: now, onOpen: { onOpen(assignment.id) }, onPreview: { reference in
-                Task { await preview.open(reference, service: attachmentService) }
-            })
+            AssignmentRow(assignment: assignment, now: now, onOpen: {
+                if assignment.deletedAt == nil { onOpen(assignment.id) }
+            }, onPreview: { reference in Task { await preview.open(reference, service: attachmentService) } })
         }
-        .padding(.vertical, 3)
-        .listRowSeparator(.visible, edges: .bottom)
+        .padding(.vertical, 3).listRowSeparator(.visible, edges: .bottom)
         .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
-        .alignmentGuide(.listRowSeparatorTrailing) { dimensions in dimensions.width }
+        .alignmentGuide(.listRowSeparatorTrailing) { $0.width }
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            Button { change { store.toggleCompletion(assignment.id) } } label: {
-                Label(assignment.status == .active ? "Complete" : "Restore", systemImage: "checkmark")
-            }.tint(.green)
+            if assignment.deletedAt != nil {
+                Button("Restore", systemImage: "arrow.uturn.backward") { change { store.restoreDeleted(assignment.id) } }.tint(.green)
+            } else {
+                Button(assignment.status == .active ? "Complete" : "Restore", systemImage: "checkmark") { toggle(assignment) }.tint(.green)
+            }
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) { change { store.delete(assignment.id) } } label: {
-                Label("Delete", systemImage: "trash")
-            }.tint(.red)
-            if assignment.status == .active {
-                Button { change { store.setStatus(assignment.id, to: .abandoned) } } label: {
-                    Label("Abandon", systemImage: "minus.circle")
-                }.tint(.gray)
+            if assignment.deletedAt == nil {
+                Button("Delete", systemImage: "trash", role: .destructive) { change { store.delete(assignment.id) } }.tint(.red)
+                if assignment.status == .active {
+                    Button("Abandon", systemImage: "minus.circle") { change { store.setStatus(assignment.id, to: .abandoned) } }.tint(.gray)
+                }
             }
         }
         .contextMenu {
-            Button("Edit", systemImage: "pencil") { onOpen(assignment.id) }
-            Button(assignment.status == .active ? "Complete" : "Restore", systemImage: "checkmark") {
-                change { store.toggleCompletion(assignment.id) }
-            }
-            Button("Delete", systemImage: "trash", role: .destructive) { change { store.delete(assignment.id) } }.tint(.red)
-            if assignment.status == .active {
-                Button("Abandon", systemImage: "minus.circle") { change { store.setStatus(assignment.id, to: .abandoned) } }
+            if assignment.deletedAt != nil {
+                Button("Restore", systemImage: "arrow.uturn.backward") { change { store.restoreDeleted(assignment.id) } }
+            } else {
+                Button("Edit", systemImage: "pencil") { onOpen(assignment.id) }
+                Button(assignment.status == .active ? "Complete" : "Restore", systemImage: "checkmark") { toggle(assignment) }
+                Button("Delete", systemImage: "trash", role: .destructive) { change { store.delete(assignment.id) } }.tint(.red)
+                if assignment.status == .active {
+                    Button("Abandon", systemImage: "minus.circle") { change { store.setStatus(assignment.id, to: .abandoned) } }
+                }
             }
         }
     }
 
-    private func change(_ action: () -> Void) {
-        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.28), action)
+    private func toggle(_ assignment: Assignment) {
+        if category == .upcoming, assignment.status == .active { projection.keepCompleted(assignment.id) }
+        change { store.toggleCompletion(assignment.id) }
+    }
+    private func change(_ action: () -> Void) { withAnimation(motion, action) }
+    private func rebuild(animated: Bool) {
+        withAnimation(animated ? motion : nil) {
+            projection.rebuild(store.assignments, sort: sort, filter: category, search: search)
+        }
     }
 }
