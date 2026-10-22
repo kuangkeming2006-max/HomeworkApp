@@ -74,6 +74,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.active"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.completed"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.section.abandoned"].exists)
+        XCTAssertFalse(app.searchFields.firstMatch.exists, "Filtering must not reveal search without a pull")
         capture("Categories — all five filters retain colored sections")
         category("Completed", app)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Finished problem set"))

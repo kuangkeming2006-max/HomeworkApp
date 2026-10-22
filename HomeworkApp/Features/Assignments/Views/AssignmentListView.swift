@@ -10,6 +10,7 @@ struct AssignmentListView: View {
     @State private var addingAI = false
     @State private var search = ""
     @State private var searchExpanded = false
+    @State private var scrollInteraction = AssignmentScrollInteraction()
     @State private var projection = AssignmentListProjection()
     @State private var preview = AttachmentPreviewModel()
     @State private var visibleIDs: Set<UUID> = []
@@ -36,12 +37,13 @@ struct AssignmentListView: View {
                     .listRowSeparatorTint(.clear)
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { _, frame in
                         headingLayout.update(headerBottom: frame.maxY, visibleTop: visibleTop)
-                        if !searchExpanded, frame.minY > visibleTop + 40 {
+                        if !searchExpanded, scrollInteraction.isUserScrolling, frame.minY > visibleTop + 40 {
                             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = true }
                         } else if searchExpanded, search.isEmpty, frame.maxY < visibleTop {
                             withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = false }
                         }
                     }
+                    .background(AssignmentScrollProbe(interaction: scrollInteraction).frame(width: 0, height: 0))
                 if searchExpanded {
                     AssignmentSearchField(text: $search) {
                         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = false }
@@ -76,6 +78,7 @@ struct AssignmentListView: View {
               .listSectionSeparator(.hidden, edges: .top)
             }
             .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
+            .contentMargins(.top, 0, for: .scrollContent)
             .listSectionSpacing(0)
             .scrollBounceBehavior(.always, axes: .vertical)
             .accessibilityIdentifier("assignments.list")

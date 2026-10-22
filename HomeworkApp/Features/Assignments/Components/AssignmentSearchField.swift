@@ -1,6 +1,39 @@
 import SwiftUI
 import UIKit
 
+@MainActor
+final class AssignmentScrollInteraction {
+    weak var scrollView: UIScrollView?
+    var isUserScrolling: Bool { scrollView?.isDragging == true || scrollView?.isDecelerating == true }
+}
+
+/// Reads the existing native scroll view; it adds no gesture recognizer.
+struct AssignmentScrollProbe: UIViewRepresentable {
+    let interaction: AssignmentScrollInteraction
+    func makeUIView(context: Context) -> Probe { Probe(interaction: interaction) }
+    func updateUIView(_ view: Probe, context: Context) { view.connect() }
+
+    final class Probe: UIView {
+        let interaction: AssignmentScrollInteraction
+        init(interaction: AssignmentScrollInteraction) {
+            self.interaction = interaction
+            super.init(frame: .zero)
+            isUserInteractionEnabled = false
+            isAccessibilityElement = false
+        }
+        required init?(coder: NSCoder) { return nil }
+        override func didMoveToWindow() { super.didMoveToWindow(); connect() }
+        override func didMoveToSuperview() { super.didMoveToSuperview(); connect() }
+        func connect() {
+            var ancestor = superview
+            while let view = ancestor {
+                if let scroll = view as? UIScrollView { interaction.scrollView = scroll; return }
+                ancestor = view.superview
+            }
+        }
+    }
+}
+
 struct AssignmentSearchField: UIViewRepresentable {
     @Binding var text: String
     let onCancel: () -> Void
