@@ -107,6 +107,7 @@ def simulator(args):
         filters = {
             "all": [],
             "header": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests/testAnchoredMenusFilteringAndCollapsingTitle",
+                       "-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests/testFiveCategoryFilters",
                        "-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests/testRepeatedToolbarsAndPullToSearch",
                        "-only-testing:HomeworkAppTests/NativeRedesignTests/testHeadingIgnoresMenuLayoutAndInsetChanges"],
             "preview": ["-only-testing:HomeworkAppUITests/IPhoneLayoutPreviewTests",

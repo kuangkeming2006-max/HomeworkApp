@@ -28,9 +28,10 @@ struct AssignmentListView: View {
           GeometryReader { viewport in
             let visibleTop = max(viewport.frame(in: .global).minY, viewport.safeAreaInsets.top)
             List {
+              Section {
                 assignmentHeading(large: true)
                     .id("assignments.heading.row")
-                    .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 8, trailing: 16))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
                     .listRowSeparator(.hidden)
                     .listRowSeparatorTint(.clear)
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { _, frame in
@@ -49,6 +50,9 @@ struct AssignmentListView: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
                     .listRowSeparator(.hidden).listRowSeparatorTint(.clear)
                 }
+              }
+              .listSectionSeparator(.hidden)
+              Section {
                 ForEach(projection.entries) { entry in
                     switch entry {
                     case .heading(let status):
@@ -68,8 +72,11 @@ struct AssignmentListView: View {
                             }
                     }
                 }
+              }
+              .listSectionSeparator(.hidden, edges: .top)
             }
             .listStyle(.plain).contentMargins(.bottom, 16, for: .scrollContent)
+            .listSectionSpacing(0)
             .scrollBounceBehavior(.always, axes: .vertical)
             .accessibilityIdentifier("assignments.list")
             .overlay {
@@ -129,7 +136,7 @@ struct AssignmentListView: View {
     }
 
     private func assignmentHeading(large: Bool) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: large ? 12 : 6) {
+        HStack(alignment: .center, spacing: large ? 12 : 6) {
             Text("Assignments")
                 .font(large ? .largeTitle.bold() : .headline)
                 .foregroundStyle(.primary).lineLimit(1).minimumScaleFactor(0.5)

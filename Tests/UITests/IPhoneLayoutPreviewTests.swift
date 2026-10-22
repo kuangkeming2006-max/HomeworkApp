@@ -63,12 +63,28 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         category("Completed", app)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Finished problem set"))
         XCTAssertEqual(openRows(app).count, 1)
+    }
+
+    func testFiveCategoryFilters() {
+        continueAfterFailure = false
+        let app = launch()
+        XCTAssertEqual(openRows(app).count, 2)
+        category("All", app)
+        XCTAssertEqual(openRows(app).count, 4)
+        XCTAssertTrue(app.descendants(matching: .any)["assignments.section.active"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["assignments.section.completed"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["assignments.section.abandoned"].exists)
+        capture("Categories — all five filters retain colored sections")
+        category("Completed", app)
+        XCTAssertTrue(openRows(app).firstMatch.label.contains("Finished problem set"))
+        XCTAssertEqual(openRows(app).count, 1)
         category("Abandoned", app)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Optional reading"))
+        XCTAssertEqual(openRows(app).count, 1)
         category("Deleted", app)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.empty"].exists)
         category("Upcoming", app)
-        XCTAssertEqual(openRows(app).count, 5)
+        XCTAssertEqual(openRows(app).count, 2)
         let title = app.staticTexts["assignments.heading.large"].exists ? app.staticTexts["assignments.heading.large"] : app.navigationBars["Assignments"].staticTexts["Assignments"].firstMatch
         XCTAssertTrue(title.isHittable)
         capture("Upcoming — native title and borderless category")

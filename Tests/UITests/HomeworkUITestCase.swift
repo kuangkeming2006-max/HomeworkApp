@@ -37,8 +37,10 @@ class HomeworkUITestCase: XCTestCase {
             // Native menu options can report hittable=false while visibly presented.
             // Touch their reported center and verify the actual resulting selection.
             option.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
-            let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", name), object: app.buttons["assignments.filter"])
-            XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed)
+            // The host can move between the scrolling heading and inline toolbar.
+            // Resolve it again after the native action has settled, rather than
+            // retaining a predicate object for the previous accessibility element.
+            XCTAssertEqual(app.buttons["assignments.filter"].value as? String, name)
         }
     }
 }
