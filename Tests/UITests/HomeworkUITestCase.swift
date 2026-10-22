@@ -34,9 +34,9 @@ class HomeworkUITestCase: XCTestCase {
             app.buttons["assignments.filter"].tap()
             let option = app.buttons[name]
             XCTAssertTrue(option.waitForExistence(timeout: 5))
-            let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "hittable == true"), object: option)
-            XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 5), .completed)
-            option.press(forDuration: 0.1)
+            // Native menu options can report hittable=false while visibly presented.
+            // Touch their reported center and verify the actual resulting selection.
+            option.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
             let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", name), object: app.buttons["assignments.filter"])
             XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed)
         }

@@ -89,10 +89,11 @@ struct AssignmentListView: View {
             }
             ToolbarItem(placement: .largeSubtitle) { assignmentHeading(large: true) }
                 .sharedBackgroundVisibility(.hidden)
-            if titleLayout.isCompact {
-                ToolbarItem(placement: .title) { assignmentHeading(large: false) }
-                    .sharedBackgroundVisibility(.hidden)
+            ToolbarItem(placement: .title) {
+                if titleLayout.isCompact { assignmentHeading(large: false) }
+                else { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) }
             }
+            .sharedBackgroundVisibility(.hidden)
             if let toolbar { WorkspaceToolbar(model: toolbar, mode: .assignments) }
         }
         .attachmentPreview(preview)

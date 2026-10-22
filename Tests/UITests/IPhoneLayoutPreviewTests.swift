@@ -5,7 +5,7 @@ import XCTest
 final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
     func testAnchoredMenusFilteringAndRepeatedToolbars() {
         continueAfterFailure = false
-        let app = launch()
+        let app = launch(["--fixture-assignments"])
         let tabs = app.tabBars.firstMatch
         capture("Assignments — category beside title without background")
         let categoryControl = app.buttons["assignments.filter"]
@@ -60,7 +60,7 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         category("Deleted", app)
         XCTAssertTrue(app.descendants(matching: .any)["assignments.empty"].exists)
         category("Upcoming", app)
-        XCTAssertEqual(openRows(app).count, 2)
+        XCTAssertEqual(openRows(app).count, 5)
         let title = app.staticTexts["assignments.heading.large"].exists ? app.staticTexts["assignments.heading.large"] : app.navigationBars["Assignments"].staticTexts["Assignments"].firstMatch
         XCTAssertTrue(title.isHittable)
         capture("Upcoming — native title and borderless category")
