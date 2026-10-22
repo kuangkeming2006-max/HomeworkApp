@@ -32,7 +32,9 @@ struct AssignmentListView: View {
               Section {
                 assignmentHeading(large: true)
                     .id("assignments.heading.row")
-                    .listRowInsets(EdgeInsets(top: 2, leading: 16, bottom: 8, trailing: 16))
+                    .listRowInsets(.top, 2)
+                    .listRowInsets(.bottom, 8)
+                    .listRowInsets(.horizontal, 16)
                     .listRowSeparator(.hidden)
                     .listRowSeparatorTint(.clear)
                     .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { _, frame in
@@ -49,12 +51,16 @@ struct AssignmentListView: View {
                         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { searchExpanded = false }
                     }
                     .frame(height: 56)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 8, bottom: 0, trailing: 8))
+                    .listRowInsets(.vertical, 0)
+                    .listRowInsets(.horizontal, 8)
                     .listRowSeparator(.hidden).listRowSeparatorTint(.clear)
                 }
               }
               .listSectionSeparator(.hidden)
               .listSectionMargins(.vertical, 0)
+              .listRowInsets(.top, 2)
+              .listRowInsets(.bottom, 8)
+              .listRowInsets(.horizontal, 16)
               .environment(\.defaultMinListRowHeight, 0)
               Section {
                 ForEach(projection.entries) { entry in
