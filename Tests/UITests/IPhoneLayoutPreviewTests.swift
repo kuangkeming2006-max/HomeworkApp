@@ -126,8 +126,13 @@ final class IPhoneLayoutPreviewTests: HomeworkUITestCase {
         app.searchFields.firstMatch.typeText("Earlier lab")
         XCTAssertEqual(openRows(app).count, 1)
         XCTAssertTrue(openRows(app).firstMatch.label.contains("Earlier lab report"))
-        app.buttons["Cancel"].tap()
+        // iOS 27 presents UISearchBar cancellation as a native Close symbol.
+        let closeSearch = app.buttons.matching(NSPredicate(format: "label == 'Close' OR label == 'Cancel'")).firstMatch
+        XCTAssertTrue(closeSearch.waitForExistence(timeout: 5))
+        closeSearch.tap()
         XCTAssertEqual(openRows(app).count, 2)
+        XCTAssertEqual(app.searchFields.count, 0)
+        capture("Search — closed and full list restored")
     }
 
     func testImmediateCompletionDelayedRemovalUndoAndTabExit() {
