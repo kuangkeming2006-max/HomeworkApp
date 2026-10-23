@@ -1,0 +1,215 @@
+import XCTest
+
+/// A short runtime capture of the changed flow, not the broad regression suite.
+@MainActor
+final class InteractionPreviewTests: HomeworkUITestCase {
+    /// The full capture below remains available manually; this is the remaining changed flow.
+    func testCaptureAttachmentActions() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--fixture-design"]
+        app.launch()
+        let list = app.collectionViews["assignments.list"]
+        let thumbnail = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.thumbnail.'")).firstMatch
+        XCTAssertTrue(thumbnail.waitForExistence(timeout: 20))
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.buttons["settings.accent"].waitForExistence(timeout: 5))
+        app.buttons["settings.accent"].tap()
+        XCTAssertTrue(app.buttons["settings.accent.orange"].waitForExistence(timeout: 5))
+        app.buttons["settings.accent.orange"].tap()
+        app.navigationBars["Theme color"].buttons.element(boundBy: 0).tap()
+        app.tabBars.buttons["Assignments"].tap()
+        XCTAssertTrue(thumbnail.waitForExistence(timeout: 5))
+        thumbnail.tap()
+        let close = app.buttons["attachment.image.close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5))
+        let share = app.buttons["attachment.image.share"]
+        XCTAssertTrue(share.waitForExistence(timeout: 5))
+        XCTAssertTrue(share.isEnabled)
+        share.tap()
+        let sharePanel = app.descendants(matching: .any).matching(identifier: "ShareSheet.RemoteContainerView").firstMatch
+        XCTAssertTrue(sharePanel.waitForExistence(timeout: 10))
+        capture("Native image share panel")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)).tap()
+        XCTAssertTrue(sharePanel.waitForNonExistence(timeout: 5))
+        app.swipeDown()
+        XCTAssertTrue(close.waitForNonExistence(timeout: 5))
+
+        list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'")).firstMatch.tap()
+        let form = app.descendants(matching: .any).matching(identifier: "editor.form").firstMatch
+        XCTAssertTrue(form.waitForExistence(timeout: 5))
+        let photos = app.buttons["attachments.photos"]
+        let files = app.buttons["attachments.files"]
+        for _ in 0..<4 {
+            if files.exists && files.isHittable { break }
+            form.swipeUp()
+        }
+        let image = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.preview.'")).firstMatch
+        XCTAssertTrue(image.isHittable)
+        XCTAssertTrue(photos.exists); XCTAssertTrue(files.exists)
+        let photosFrame = photos.frame, filesFrame = files.frame
+        XCTAssertEqual(photosFrame.midY, filesFrame.midY, accuracy: 2)
+        XCTAssertLessThan(photosFrame.midX, filesFrame.midX)
+        capture("Large image and single import row")
+        app.cells.containing(.button, identifier: image.identifier).firstMatch.swipeLeft()
+        let delete = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.remove.'")).firstMatch
+        XCTAssertTrue(delete.waitForExistence(timeout: 5))
+        capture("Red attachment delete with orange accent")
+        delete.tap()
+        let remove = app.buttons["Remove attachment"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 5))
+        capture("Attachment removal confirmation")
+        if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() }
+        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap() }
+        XCTAssertTrue(remove.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(image.exists, "Canceling removal must keep the image")
+        capture("Canceled attachment removal")
+    }
+
+    func testCaptureUpdatedIPhoneInteractions() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting", "--fixture-design", "--fixture-assignments"]
+        app.launch()
+        let list = app.collectionViews["assignments.list"]
+        let thumbnail = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.thumbnail.'")).firstMatch
+        XCTAssertTrue(thumbnail.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["assignments.add"].isHittable)
+        XCTAssertTrue(app.buttons["assignments.ai"].isHittable)
+        let categories = app.buttons["assignments.filter"]
+        XCTAssertTrue(categories.waitForExistence(timeout: 5))
+        categories.tap()
+        for name in ["All", "Upcoming", "Completed", "Abandoned", "Deleted"] { XCTAssertTrue(app.buttons[name].exists) }
+        capture("Five native category choices")
+        app.buttons["Completed"].tap()
+        XCTAssertEqual(categories.value as? String, "Completed")
+        capture("Completed category")
+        selectCategory("Upcoming", app: app)
+        list.swipeDown()
+        thumbnail.tap()
+        XCTAssertTrue(app.buttons["attachment.image.close"].waitForExistence(timeout: 10))
+        capture("Full screen image")
+        app.swipeDown()
+        XCTAssertTrue(app.buttons["attachment.image.close"].waitForNonExistence(timeout: 5))
+
+        let status = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.complete.'")).firstMatch
+        status.tap()
+        XCTAssertEqual(status.value as? String, "Completed")
+        XCTAssertFalse(app.sheets.firstMatch.exists)
+        capture("Immediate checkmark without a sheet")
+        XCTAssertTrue(app.buttons["assignments.undo"].waitForExistence(timeout: 5))
+        capture("Undo countdown")
+        app.buttons["assignments.undo"].tap()
+
+        let firstRow = list.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'assignment.open.'")).firstMatch
+        let cell = list.cells.containing(.button, identifier: firstRow.identifier).firstMatch
+        cell.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.5))
+            .press(forDuration: 0.05, thenDragTo: cell.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)))
+        XCTAssertTrue(app.buttons["assignments.undo"].waitForExistence(timeout: 5))
+        capture("Full swipe complete")
+        app.buttons["assignments.undo"].tap()
+        cell.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5))
+            .press(forDuration: 0.05, thenDragTo: cell.coordinate(withNormalizedOffset: CGVector(dx: 0.05, dy: 0.5)))
+        XCTAssertTrue(app.buttons["assignments.undo"].waitForExistence(timeout: 5))
+        capture("Full swipe delete")
+        app.buttons["assignments.undo"].tap()
+
+        app.tabBars.buttons["Calendar"].tap()
+        let month = app.buttons["calendar.month"]
+        XCTAssertTrue(month.waitForExistence(timeout: 5))
+        let selected = app.staticTexts["calendar.selectedDate"]
+        XCTAssertTrue(selected.waitForExistence(timeout: 5))
+        let selectedBeforeBrowsing = selected.label
+        let originalMonth = month.label
+        let grid = app.otherElements["calendar.grid"]
+        XCTAssertTrue(grid.waitForExistence(timeout: 5))
+        let days = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'calendar.day.'"))
+        let dragStartDay = days.element(boundBy: 10)
+        XCTAssertTrue(dragStartDay.exists)
+        let forward = dragStartDay.frame.midX >= grid.frame.midX
+        let endY = (dragStartDay.frame.midY - grid.frame.minY) / grid.frame.height
+        dragStartDay.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 0.05, thenDragTo: grid.coordinate(withNormalizedOffset: CGVector(dx: forward ? 0.05 : 0.95, dy: endY)))
+        let dragged = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", originalMonth), object: month)
+        XCTAssertEqual(XCTWaiter.wait(for: [dragged], timeout: 5), .completed)
+        XCTAssertEqual(selected.label, selectedBeforeBrowsing, "A drag that starts on a date must browse without selecting it")
+        capture("Calendar date-origin drag preserves selection")
+        app.buttons[forward ? "calendar.previous" : "calendar.next"].tap()
+        let returned = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", originalMonth), object: month)
+        XCTAssertEqual(XCTWaiter.wait(for: [returned], timeout: 5), .completed)
+        XCTAssertEqual(selected.label, selectedBeforeBrowsing)
+        app.buttons["calendar.next"].tap()
+        let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", originalMonth), object: month)
+        XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 5), .completed)
+        XCTAssertEqual(selected.label, selectedBeforeBrowsing, "Month arrows must preserve the selected date")
+        capture("Calendar translated month")
+        app.buttons["calendar.today"].tap()
+        days.element(boundBy: Calendar.current.component(.day, from: Date()) == 1 ? 1 : 0).tap()
+        let selectedByTap = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", selectedBeforeBrowsing), object: selected)
+        XCTAssertEqual(XCTWaiter.wait(for: [selectedByTap], timeout: 5), .completed)
+        capture("Calendar selected day")
+
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.buttons["settings.appearance"].waitForExistence(timeout: 5))
+        capture("Appearance settings")
+        app.buttons["settings.appearance"].tap()
+        app.buttons["Dark"].tap()
+        capture("Dark appearance")
+        app.buttons["settings.appearance"].tap()
+        app.buttons["System"].tap()
+        app.buttons["settings.accent"].tap()
+        XCTAssertTrue(app.buttons["settings.accent.purple"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'settings.accent.'")).count, 7)
+        capture("Distinct theme color swatches")
+        app.buttons["settings.accent.orange"].tap()
+        capture("Selected orange theme")
+        app.navigationBars["Theme color"].buttons.element(boundBy: 0).tap()
+        app.tabBars.buttons["Assignments"].tap()
+        capture("Assignments with restricted orange accent")
+        firstRow.tap()
+        let form = app.descendants(matching: .any).matching(identifier: "editor.form").firstMatch
+        let image = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.preview.'")).firstMatch
+        let photos = app.buttons["attachments.photos"]
+        let files = app.buttons["attachments.files"]
+        for _ in 0..<7 where !files.isHittable { form.swipeUp() }
+        XCTAssertTrue(image.isHittable)
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.remove.'")).firstMatch.exists)
+        XCTAssertTrue(photos.exists); XCTAssertTrue(files.exists)
+        XCTAssertEqual(photos.frame.midY, files.frame.midY, accuracy: 2)
+        XCTAssertLessThan(photos.frame.midX, files.frame.midX)
+        capture("Large editor image without filename")
+        image.tap()
+        XCTAssertTrue(app.buttons["attachment.image.close"].waitForExistence(timeout: 5))
+        let share = app.buttons["attachment.image.share"]
+        XCTAssertTrue(share.waitForExistence(timeout: 5))
+        XCTAssertTrue(share.isEnabled)
+        share.tap()
+        let shareSheet = app.collectionViews["activityCollectionView"]
+        XCTAssertTrue(shareSheet.waitForExistence(timeout: 5))
+        capture("Native image share sheet")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)).tap()
+        XCTAssertTrue(shareSheet.waitForNonExistence(timeout: 5))
+        app.swipeDown()
+        XCTAssertTrue(app.buttons["attachment.image.close"].waitForNonExistence(timeout: 5))
+        let imageRow = app.cells.containing(.button, identifier: image.identifier).firstMatch
+        imageRow.swipeLeft()
+        let deleteAttachment = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'attachment.remove.'")).firstMatch
+        XCTAssertTrue(deleteAttachment.waitForExistence(timeout: 5))
+        capture("Red attachment swipe action")
+        deleteAttachment.tap()
+        let remove = app.buttons["Remove attachment"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 5))
+        capture("Confirm attachment removal")
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(remove.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(image.exists, "Canceling removal must keep the image")
+    }
+
+    private func capture(_ name: String) {
+        let afterTransition = Date().addingTimeInterval(0.4)
+        let settled = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in Date() >= afterTransition }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [settled], timeout: 2), .completed)
+        let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
+    }
+}

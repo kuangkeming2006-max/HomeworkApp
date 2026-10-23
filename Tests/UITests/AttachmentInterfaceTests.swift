@@ -33,7 +33,9 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
                       "The PDF must render in Quick Look")
         capture(app, "PDF preview")
         closePreview.tap()
-        if app.tabBars.buttons["Calendar"].exists { app.tabBars.buttons["Calendar"].tap() }
+        app.navigationBars["Assignment"].buttons.element(boundBy: 0).tap()
+        let calendarTab = app.tabBars.buttons["Calendar"]
+        if calendarTab.waitForExistence(timeout: 5) { calendarTab.tap() }
         else {
             if !app.staticTexts["Calendar"].firstMatch.exists { app.buttons["Show Sidebar"].tap() }
             app.staticTexts["Calendar"].firstMatch.tap()
@@ -60,7 +62,7 @@ final class AttachmentInterfaceTests: HomeworkUITestCase {
         XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed)
         capture(app, "Native photo picker", includeTree: false)
         pickerCancel.tap()
-        let editorCancel = app.navigationBars["New assignment"].buttons["Cancel"]
+        let editorCancel = app.navigationBars["New assignment"].buttons.element(boundBy: 0)
         XCTAssertTrue(editorCancel.waitForExistence(timeout: 5))
         let files = app.buttons["attachments.files"]
         XCTAssertTrue(files.waitForExistence(timeout: 5))

@@ -1,5 +1,4 @@
 import SwiftUI
-import QuickLook
 import HomeworkDomain
 
 struct AssignmentDetailView: View {
@@ -7,6 +6,7 @@ struct AssignmentDetailView: View {
     @State private var editor: AssignmentEditor
     @State private var attachmentModel: AttachmentViewModel?
     @State private var closing = false
+    @State private var confirmingExit = false
     @Environment(\.attachmentService) private var attachmentService
     private let store: AssignmentStore
 
@@ -67,48 +67,70 @@ struct AssignmentDetailView: View {
             }
             Section {
                 if let message = editor.validationMessage { Text(message).foregroundStyle(.red) }
-                else if !editor.isNew { Text("Changes save automatically.").foregroundStyle(.secondary) }
             }
         }
         .navigationTitle(editor.isNew ? "New assignment" : "Assignment")
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("editor.form")
+        .toolbar(.hidden, for: .tabBar)
         .toolbar {
-            if editor.isNew {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        guard !closing else { return }; closing = true
-                        Task { await attachmentModel?.close(); dismiss() }
-                    }.disabled(closing)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
-                        if editor.create() { attachmentModel?.markCommitted(); dismiss() }
-                    }
-                        .disabled(closing || !editor.canSave || attachmentModel?.busy == true).accessibilityIdentifier("editor.save")
-                }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save", systemImage: "checkmark", action: saveAndExit)
+                    .disabled(closing || !editor.canSave || attachmentModel?.busy == true)
+                    .accessibilityIdentifier("editor.save")
             }
         }
-        .interactiveDismissDisabled(closing || attachmentModel?.busy == true)
+        .background(EditorDismissalGuard(needsConfirmation: editor.hasChanges || closing || attachmentModel?.busy == true,
+                                         onAttempt: requestExit))
+        .alert("Save changes?", isPresented: $confirmingExit) {
+            Button("Save", action: saveAndExit).disabled(!editor.canSave || attachmentModel?.busy == true)
+            Button("Discard Changes", role: .destructive, action: discardAndExit)
+            Button("Keep Editing", role: .cancel) {}
+        } message: { Text("Your changes have not been saved.") }
         // Presentation belongs to the stable Form, not its virtualized Section cells.
-        .quickLookPreview(Binding(get: { attachmentModel?.previewURL }, set: { attachmentModel?.previewURL = $0 }))
+        .attachmentPreview(attachmentModel?.previewPresentation ?? unavailablePreview)
+        .confirmationDialog("Remove attachment?", isPresented: Binding(
+            get: { attachmentModel?.pendingRemoval != nil },
+            set: { if !$0 { attachmentModel?.pendingRemoval = nil } }),
+            titleVisibility: .visible, presenting: attachmentModel?.pendingRemoval) { reference in
+                Button("Remove attachment", role: .destructive) {
+                    Task { await attachmentModel?.remove(reference) }
+                }.tint(.red)
+                Button("Cancel", role: .cancel) {}
+            } message: { _ in
+                Text("This removes the attachment from this assignment.")
+            }
         .task {
             guard attachmentModel == nil, let attachmentService else { return }
-            if editor.isNew {
-                let draftEditor = editor
-                attachmentModel = AttachmentViewModel(service: attachmentService) { [draftEditor] references in
-                    draftEditor.set(\.attachments, references)
-                }
-            } else {
-                attachmentModel = AttachmentViewModel(assignmentID: editor.draft.id, store: store, service: attachmentService)
+            let draftEditor = editor
+            attachmentModel = AttachmentViewModel(service: attachmentService, references: editor.draft.attachments) { [draftEditor] references in
+                draftEditor.set(\.attachments, references)
             }
-        }
-        .onDisappear {
-            editor.flush()
         }
         .onChange(of: store.assignment(editor.draft.id)) { _, value in
             if let value { editor.reconcile(value) }
         }
+    }
+
+    @State private var unavailablePreview = AttachmentPreviewModel()
+
+    private func requestExit() {
+        guard !closing, attachmentModel?.busy != true else { return }
+        if editor.hasChanges { confirmingExit = true } else { discardAndExit() }
+    }
+
+    private func discardAndExit() {
+        guard !closing else { return }
+        closing = true
+        Task { await attachmentModel?.close(); dismiss() }
+    }
+
+    private func saveAndExit() {
+        guard !closing, attachmentModel?.busy != true else { return }
+        guard editor.save() else { return }
+        closing = true
+        let retained = store.retainedAttachmentPaths
+        Task { await attachmentModel?.finishCommit(retaining: retained); dismiss() }
     }
 
     private func binding<Value>(_ path: WritableKeyPath<Assignment, Value>) -> Binding<Value> {

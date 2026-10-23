@@ -1,7 +1,7 @@
 import Foundation
 
 public enum AssignmentFilter: String, CaseIterable, Identifiable, Sendable {
-    case upcoming = "Upcoming", completed = "Completed", abandoned = "Abandoned", all = "All"
+    case all = "All", upcoming = "Upcoming", completed = "Completed", abandoned = "Abandoned", deleted = "Deleted"
     public var id: String { rawValue }
 }
 
@@ -29,9 +29,10 @@ public enum AssignmentQuery {
             case .upcoming: $0.status == .active
             case .completed: $0.status == .completed
             case .abandoned: $0.status == .abandoned
-            case .all: true
+            case .all, .deleted: true
             }
-            return $0.deletedAt == nil && matchesStatus && (term.isEmpty ||
+            let matchesDeletion = filter == .deleted ? $0.deletedAt != nil : $0.deletedAt == nil
+            return matchesDeletion && matchesStatus && (term.isEmpty ||
                 [$0.title, $0.course ?? "", $0.notes ?? ""].contains { $0.localizedStandardContains(term) })
         }
     }

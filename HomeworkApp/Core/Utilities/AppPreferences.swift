@@ -4,6 +4,12 @@ import HomeworkDomain
 
 @Observable @MainActor
 final class AppPreferences {
+    var appearance: AppAppearance {
+        didSet { defaults.set(appearance.rawValue, forKey: "appearance") }
+    }
+    var accent: AppAccent {
+        didSet { defaults.set(accent.rawValue, forKey: "accent") }
+    }
     var provider: ProviderConfiguration {
         didSet {
             if let data = try? JSONEncoder().encode(provider) { defaults.set(data, forKey: "llmProvider") }
@@ -32,6 +38,8 @@ final class AppPreferences {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        appearance = AppAppearance(rawValue: defaults.string(forKey: "appearance") ?? "") ?? .system
+        accent = AppAccent(rawValue: defaults.string(forKey: "accent") ?? "") ?? .purple
         if let data = defaults.data(forKey: "briefingConfiguration"),
            let value = try? JSONDecoder().decode(BriefingConfiguration.self, from: data) { briefing = value }
         else { briefing = .init() }

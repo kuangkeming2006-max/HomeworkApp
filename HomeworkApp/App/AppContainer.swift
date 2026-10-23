@@ -86,7 +86,7 @@ final class AppContainer {
         }
         if let attachmentService, lastPrunedAt.map({ Date().timeIntervalSince($0) > 3600 }) ?? true {
             lastPrunedAt = Date()
-            let keeping = Set(store.assignments.filter { $0.deletedAt == nil }.flatMap(\.attachments).map(\.relativePath))
+            let keeping = store.retainedAttachmentPaths
             Task { try? await attachmentService.pruneOrphans(keeping: keeping, now: Date()) }
         }
     }

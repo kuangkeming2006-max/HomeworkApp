@@ -32,7 +32,15 @@ class HomeworkUITestCase: XCTestCase {
         if segment.exists { segment.tap() }
         else {
             app.buttons["assignments.filter"].tap()
-            app.buttons[name].tap()
+            let option = app.buttons[name]
+            XCTAssertTrue(option.waitForExistence(timeout: 5))
+            // Let native activation resolve its hit point after menu presentation.
+            // A provisional accessibility frame can be CGRect.null during animation.
+            option.tap()
+            // The host can move between the scrolling heading and inline toolbar.
+            // Resolve it again after the native action has settled, rather than
+            // retaining a predicate object for the previous accessibility element.
+            XCTAssertEqual(app.buttons["assignments.filter"].value as? String, name)
         }
     }
 }

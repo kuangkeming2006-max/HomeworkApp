@@ -26,6 +26,7 @@ struct AppNavigation: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var systemTypeSize
     @State private var selection: AppSection? = .assignments
+    @State private var workspaceToolbar = WorkspaceToolbarModel()
     @State private var requestedAssignment: AssignmentNavigationRequest?
     @State private var education = false
     let container: AppContainer
@@ -47,11 +48,21 @@ struct AppNavigation: View {
             }
         }
         .environment(\.locale, Locale(identifier: "en_US"))
+        .tint(container.preferences.accent.color)
+        .environment(\.appAccent, container.preferences.accent.color)
+        .environment(\.workspaceToolbar, workspaceToolbar)
+        .preferredColorScheme(effectiveColorScheme)
+        .environment(\.appReduceMotion, effectiveReduceMotion)
         .environment(\.dynamicTypeSize, effectiveTypeSize)
         .environment(\.attachmentService, container.attachmentService)
         .environment(\.llmProviderFactory, { [container] in try container.makeLLMProvider() })
         .onChange(of: scenePhase) { _, phase in
             container.setForeground(phase == .active)
+        }
+        .onChange(of: selection, initial: true) { _, section in
+            withAnimation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.75)) {
+                workspaceToolbar.activate(section?.rawValue ?? "Assignments")
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.significantTimeChangeNotification)) { _ in
             container.refreshServices()
@@ -82,6 +93,19 @@ struct AppNavigation: View {
         return systemTypeSize
     }
 
+    private var effectiveReduceMotion: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--uitesting"), ProcessInfo.processInfo.arguments.contains("--reduce-motion") { return true }
+        #endif
+        return reduceMotion
+    }
+    private var effectiveColorScheme: ColorScheme? {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--uitesting"), ProcessInfo.processInfo.arguments.contains("--dark") { return .dark }
+        #endif
+        return container.preferences.appearance.colorScheme
+    }
+
     @ViewBuilder
     private func navigation(store: AssignmentStore) -> some View {
         if horizontalSizeClass == .regular {
@@ -95,6 +119,7 @@ struct AppNavigation: View {
             } detail: {
                 destination(selection ?? .assignments, store: store)
             }
+            .safeAreaInset(edge: .bottom) { snackbar(store) }
         } else {
             TabView(selection: $selection) {
                 ForEach(AppSection.allCases) { section in
@@ -106,6 +131,16 @@ struct AppNavigation: View {
                     }
                 }
             }
+            .tabBarMinimizeBehavior(.never)
+            .modifier(UndoTabAccessory(coordinator: store.undo) {
+                withAnimation(reduceMotion ? nil : .smooth(duration: 0.24)) { store.undoLatest() }
+            })
+        }
+    }
+
+    private func snackbar(_ store: AssignmentStore) -> some View {
+        UndoSnackbar(coordinator: store.undo) {
+            withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.28)) { store.undoLatest() }
         }
     }
 
@@ -126,8 +161,6 @@ struct AppNavigation: View {
       // Each sidebar destination owns a different navigation path. Keep their identities
       // distinct so SwiftUI never compares a task UUID path with another column's path.
       .id(section)
-      .safeAreaInset(edge: .bottom) { UndoSnackbar(coordinator: store.undo, undo: store.undoLatest) }
-      .animation(reduceMotion ? nil : .smooth(duration: 0.22), value: store.undo.latest?.id)
     }
 
     private func open(_ route: HomeworkRoute) {

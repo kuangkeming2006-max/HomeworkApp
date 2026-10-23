@@ -25,7 +25,7 @@ final class AssignmentStore {
         return value
     }
 
-    private func record(_ id: UUID) -> Assignment? {
+    func record(_ id: UUID) -> Assignment? {
         guard let index = positions[id] else { return nil }
         return assignments[index]
     }
@@ -63,6 +63,7 @@ final class AssignmentStore {
         value.updatedAt = max(Date(), value.updatedAt.addingTimeInterval(0.001))
         value.localRevision += 1
         try save([value])
+        if before.status != .completed, value.status == .completed { AppHaptics.success() }
         if let undoMessage, AssignmentDisposition(value) != before {
             undo.record(id: id, before: before, after: AssignmentDisposition(value), message: undoMessage,
                         previousToken: priorToken, resultingToken: dispositionTokens[id] ?? priorToken)
@@ -84,6 +85,24 @@ final class AssignmentStore {
 
     func delete(_ id: UUID) {
         action(id, message: "Assignment deleted") { $0.deletedAt = max(Date(), $0.updatedAt) }
+    }
+
+    func restoreDeleted(_ id: UUID) {
+        guard var value = record(id), value.deletedAt != nil else { return }
+        let before = AssignmentDisposition(value)
+        let previous = dispositionTokens[id] ?? UUID()
+        value.deletedAt = nil
+        value.updatedAt = max(Date(), value.updatedAt.addingTimeInterval(0.001))
+        value.localRevision += 1
+        perform {
+            try save([value])
+            undo.record(id: id, before: before, after: AssignmentDisposition(value), message: "Assignment recovered",
+                        previousToken: previous, resultingToken: dispositionTokens[id] ?? previous)
+        }
+    }
+
+    var retainedAttachmentPaths: Set<String> {
+        Set(assignments.flatMap(\.attachments).map(\.relativePath))
     }
 
     private func action(_ id: UUID, message: String, change: (inout Assignment) -> Void) {

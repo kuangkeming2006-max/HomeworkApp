@@ -47,23 +47,27 @@ final class PersistenceTests: XCTestCase {
         let store = try AssignmentStore(repository: repository)
         let first = AssignmentEditor(assignment: assignment, isNew: false, store: store)
         let second = AssignmentEditor(assignment: assignment, isNew: false, store: store)
-        first.set(\.title, "Edited title"); first.flush()
+        first.set(\.title, "Edited title"); XCTAssertTrue(first.save())
         store.toggleCompletion(assignment.id)
-        second.set(\.notes, "Edited in another window"); second.flush()
+        second.set(\.notes, "Edited in another window"); XCTAssertTrue(second.save())
         let result = try XCTUnwrap(store.assignment(assignment.id))
         XCTAssertEqual(result.title, "Edited title")
         XCTAssertEqual(result.notes, "Edited in another window")
         XCTAssertTrue(result.isCompleted)
     }
 
-    func testDebouncedEditsPersistWithoutSaveButton() async throws {
+    func testEditsStayLocalUntilExplicitSave() async throws {
         let repository = SwiftDataAssignmentRepository(container: try SwiftDataAssignmentRepository.makeContainer(inMemory: true))
         let assignment = Assignment(title: "Report", dueDate: Date())
         try repository.save([assignment])
         let store = try AssignmentStore(repository: repository)
         let editor = AssignmentEditor(assignment: assignment, isNew: false, store: store)
-        editor.set(\.notes, "Saved automatically")
+        editor.set(\.notes, "Saved explicitly")
         try await Task.sleep(for: .milliseconds(700))
-        XCTAssertEqual(try repository.fetchAll().first?.notes, "Saved automatically")
+        XCTAssertNil(try repository.fetchAll().first?.notes)
+        XCTAssertTrue(editor.hasChanges)
+        XCTAssertTrue(editor.save())
+        XCTAssertEqual(try repository.fetchAll().first?.notes, "Saved explicitly")
+        XCTAssertFalse(editor.hasChanges)
     }
 }

@@ -12,19 +12,41 @@ struct SettingsView: View {
     let buildProvider: LLMProviderBuilder
     var liveActivities: LiveActivityCoordinator? = nil
     @Environment(\.openURL) private var openURL
+    @Namespace private var themeTransition
 
     var body: some View {
         @Bindable var preferences = self.preferences
         Form {
+            Section("Appearance") {
+                Picker("Appearance", selection: $preferences.appearance) {
+                    ForEach(AppAppearance.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .accessibilityIdentifier("settings.appearance")
+                .tint(.blue)
+                NavigationLink {
+                    ThemeColorPicker(preferences: preferences)
+                        .toolbar(.hidden, for: .tabBar)
+                        .navigationTransition(.zoom(sourceID: "theme.color", in: themeTransition))
+                } label: {
+                    HStack {
+                        Text("Theme color").foregroundStyle(.primary)
+                        Spacer()
+                        Circle().fill(preferences.accent.color).frame(width: 18, height: 18)
+                        Text(preferences.accent.rawValue).foregroundStyle(.secondary)
+                    }.matchedTransitionSource(id: "theme.color", in: themeTransition)
+                }
+                .accessibilityIdentifier("settings.accent")
+            }
             Section("AI") {
                 NavigationLink("AI provider") {
                     AISettingsView(preferences: preferences, secrets: secrets, buildProvider: buildProvider)
+                        .toolbar(.hidden, for: .tabBar)
                 }
                     .accessibilityIdentifier("settings.ai")
             }
             if let backup = backupService {
                 Section("Data") {
-                    NavigationLink("Backup and restore") { BackupView(store: store, service: backup) }
+                    NavigationLink("Backup and restore") { BackupView(store: store, service: backup).toolbar(.hidden, for: .tabBar) }
                         .accessibilityIdentifier("settings.backup")
                 }
             }
@@ -60,7 +82,7 @@ struct SettingsView: View {
             #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("--preview-activities") {
                 Section("Layout testing") {
-                    NavigationLink("Live Activity layouts") { ActivityLayoutGallery() }
+                    NavigationLink("Live Activity layouts") { ActivityLayoutGallery().toolbar(.hidden, for: .tabBar) }
                         .accessibilityIdentifier("settings.activityLayouts")
                 }
             }

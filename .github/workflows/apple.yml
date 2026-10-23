@@ -1,8 +1,6 @@
 name: Apple build and screenshots
 on:
-  push:
-    branches: ["**"] # Version tags use the shared device build in release.yml.
-  pull_request:
+  # Broad regression is explicitly dispatched. Ordinary changes use iphone-preview.yml.
   workflow_dispatch:
     inputs:
       coverage:

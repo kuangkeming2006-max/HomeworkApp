@@ -5,10 +5,11 @@ import HomeworkDomain
 @Observable @MainActor
 final class CalendarViewModel {
     var month: Date
-    var selectedDate: Date
+    private(set) var selectedDate: Date
     private(set) var calendar: Calendar
     private(set) var index: AssignmentDayIndex
     private(set) var direction = 1
+    private(set) var detailRevision = 0
 
     init(now: Date = Date()) {
         var calendar = Calendar(identifier: .gregorian)
@@ -34,15 +35,19 @@ final class CalendarViewModel {
 
     func selectMonth(_ next: Date) {
         direction = next >= month ? 1 : -1
-        let day = calendar.component(.day, from: selectedDate)
         month = calendar.dateInterval(of: .month, for: next)?.start ?? next
-        let maximum = calendar.range(of: .day, in: .month, for: month)?.count ?? 28
-        selectedDate = calendar.date(byAdding: .day, value: min(day, maximum) - 1, to: month) ?? month
+        detailRevision += 1
+    }
+
+    func selectDay(_ day: Date) {
+        selectedDate = calendar.startOfDay(for: day)
+        detailRevision += 1
     }
 
     func today() {
         selectedDate = calendar.startOfDay(for: Date())
         month = calendar.dateInterval(of: .month, for: selectedDate)?.start ?? selectedDate
+        detailRevision += 1
     }
 
     func rebuild(_ values: [Assignment], now: Date) {

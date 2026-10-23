@@ -6,38 +6,31 @@ import HomeworkDomain
 final class AssignmentEditor {
     private(set) var draft: Assignment
     private(set) var isNew: Bool
+    private(set) var saving = false
     var validationMessage: String?
+    private var base: Assignment
+    // Local edits stay separate from the externally refreshed display.
+    private var local: Assignment
     private let store: AssignmentStore
-    private var pending: [(inout Assignment) -> Void] = []
-    private var saveTask: Task<Void, Never>?
-    private var pendingStatus: AssignmentStatus?
 
     init(assignment: Assignment, isNew: Bool, store: AssignmentStore) {
-        draft = assignment; self.isNew = isNew; self.store = store
+        draft = assignment; base = assignment; local = assignment
+        self.isNew = isNew; self.store = store
     }
 
-    var canSave: Bool { (try? draft.validate()) != nil }
+    var canSave: Bool { !saving && (try? draft.validate()) != nil }
+    var hasChanges: Bool { local != base }
 
     func set<Value>(_ path: WritableKeyPath<Assignment, Value>, _ value: Value) {
+        local[keyPath: path] = value
         draft[keyPath: path] = value
         validationMessage = nil
-        guard !isNew else { return }
-        pending.append { $0[keyPath: path] = value }
-        saveTask?.cancel()
-        saveTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(350))
-            guard !Task.isCancelled else { return }
-            self?.flush()
-        }
     }
 
-    func setCompleted(_ completed: Bool) {
-        setStatus(completed ? .completed : .active)
-    }
+    func setCompleted(_ completed: Bool) { setStatus(completed ? .completed : .active) }
 
     func setStatus(_ status: AssignmentStatus) {
         guard draft.status.canTransition(to: status), draft.status != status else { return }
-        if !isNew { pendingStatus = status }
         let date = Date()
         set(\.status, status)
         set(\.completedAt, status == .completed ? max(date, draft.createdAt) : nil)
@@ -46,36 +39,42 @@ final class AssignmentEditor {
 
     func reconcile(_ value: Assignment) {
         guard !isNew, value.id == draft.id else { return }
-        var merged = value
-        for change in pending { change(&merged) }
-        draft = merged
+        func rebase<Value: Equatable>(_ path: WritableKeyPath<Assignment, Value>) {
+            if local[keyPath: path] == base[keyPath: path] {
+                base[keyPath: path] = value[keyPath: path]
+                local[keyPath: path] = value[keyPath: path]
+            }
+        }
+        rebase(\.title); rebase(\.course); rebase(\.notes); rebase(\.dueDate)
+        rebase(\.dueTimeZone); rebase(\.priority); rebase(\.reminder)
+        if AssignmentDisposition(local) == AssignmentDisposition(base) {
+            base.status = value.status; base.completedAt = value.completedAt; base.abandonedAt = value.abandonedAt
+            local.status = value.status; local.completedAt = value.completedAt; local.abandonedAt = value.abandonedAt
+        }
+        draft = local
     }
 
     @discardableResult
-    func create() -> Bool {
+    func save() -> Bool {
+        guard !saving else { return false }
+        saving = true; defer { saving = false }
         do {
-            try draft.validate()
-            try store.save([draft])
+            if isNew {
+                try local.validate()
+                try store.save([local])
+            } else {
+                guard let latest = store.assignment(draft.id) else { throw AssignmentError.notFound }
+                let merged = try AssignmentDraftMerge.merge(base: base, draft: local, latest: latest)
+                if merged != latest {
+                    let message = merged.status != latest.status ? "Assignment \(merged.status == .active ? "restored" : merged.status.rawValue)" : nil
+                    try store.update(draft.id, undoMessage: message) { $0 = merged }
+                }
+            }
             isNew = false
+            if let saved = store.assignment(draft.id) { base = saved; local = saved; draft = saved }
+            validationMessage = nil
             return true
         } catch { validationMessage = error.localizedDescription; return false }
     }
 
-    func flush() {
-        saveTask?.cancel()
-        guard !isNew, !pending.isEmpty else { return }
-        do {
-            try draft.validate()
-            if let target = pendingStatus, let latest = store.assignment(draft.id), !latest.status.canTransition(to: target) {
-                throw AssignmentError.invalid("This assignment's status changed in another window. Restore it before choosing a different status.")
-            }
-            let changes = pending
-            let undoMessage = pendingStatus.map { $0 == .active ? "Assignment restored" : "Assignment \($0.rawValue)" }
-            try store.update(draft.id, undoMessage: undoMessage) { value in
-                for change in changes { change(&value) }
-            }
-            pending.removeAll()
-            pendingStatus = nil
-        } catch { validationMessage = error.localizedDescription }
-    }
 }

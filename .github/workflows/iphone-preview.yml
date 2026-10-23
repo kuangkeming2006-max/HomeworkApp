@@ -1,0 +1,54 @@
+name: iPhone build and interaction preview
+on:
+  push:
+    paths:
+      - 'HomeworkApp/**'
+      - 'HomeworkWidgets/**'
+      - 'Shared/**'
+      - 'Packages/**'
+      - 'project.yml'
+      - 'Tests/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: Focused iPhone capture scope
+        type: choice
+        options: [preview, header]
+        default: preview
+permissions:
+  contents: read
+concurrency:
+  group: iphone-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  preview:
+    runs-on: xcode-27
+    timeout-minutes: 35
+    env:
+      XCODE_VERSION: latest-27
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: python3 scripts/select_xcode.py
+      - run: python3 scripts/install_xcodegen.py
+      - run: .tools/bin/xcodegen generate
+      - name: Domain query and compatibility regressions
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          swift test --package-path Packages/HomeworkDomain 2>&1 | tee artifacts/domain-tests.log
+      - name: Build, launch and capture changed iPhone interactions
+        env:
+          PREVIEW_SCOPE: ${{ inputs.test_scope || 'preview' }}
+        run: python3 scripts/run_apple.py simulator --family phone --device-name "iPhone 15 Pro" --appearance light --orientation portrait --test-scope "$PREVIEW_SCOPE"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: iphone-interaction-preview
+          path: artifacts/
+          retention-days: 14
+  unsigned-device:
+    uses: ./.github/workflows/ios-build.yml
