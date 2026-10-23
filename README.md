@@ -4,14 +4,14 @@ Native SwiftUI homework deadline manager with iOS 27 Liquid Glass controls and a
 
 ## Features
 
-- Offline SwiftData assignments with three category jump controls and colored vertical sections, full-swipe actions, success haptics, animated guarded Undo, search and priority/deadline sorting. V1 records/backups are preserved through V2 migration.
-- Indexed month calendar with finger-following translation that preserves the selected date, deliberate date taps, distinct status dots and fading day details.
+- Offline SwiftData assignments with five native category choices, recoverable soft deletion, immediate completion reactions, five-second Undo, search and anchored priority/deadline sorting. V1 records/backups remain compatible.
+- Indexed month calendar with finger-following translation, stable date highlights, cancellable blur transitions and deliberate date taps.
 - Native Liquid Glass iPhone tabs and toolbar buttons, standard collapsing page headings and pull-to-search; retained sidebar support.
 - Independent reminders, notification actions/deep links, incremental scheduling and a shared pending-request budget.
 - Local scheduled Live Activities with compact/minimal/expanded/Lock Screen layouts and an ordinary-notification fallback; no server/APNs requirement.
 - Offline Briefing with daily workload/progress, observed history and optional finite scheduled reports.
-- Persistent attachments with independent Photos/Files controls in one row, staged drafts, cached thumbnails, fullscreen image sharing/downward dismissal, confirmed swipe deletion and document Quick Look.
-- Native fixed-height status sheet with vertical standard-color actions and outside-tap dismissal; Undo uses the system tab accessory.
+- Local field and attachment drafts for new and existing assignments, explicit Save and guarded Back/Discard. Cached thumbnails, bounded zoom/pan, fullscreen sharing and document Quick Look.
+- Native immediate checkmark completion with a finite particle reaction and success haptic; Upcoming rows remain briefly visible while All moves them immediately. Undo uses the system tab accessory.
 - Saved System/Light/Dark appearance and real color swatches; the default is the original lavender, with accent changes limited to the existing 0.2.0 control scope.
 - Optional custom HTTPS Chat Completions provider, Keychain API key, text/image recognition and mandatory editable confirmation. Ambiguous dates cannot be silently saved.
 - Versioned local backup/restore including attachments, integrity validation and preservation of existing assignments.
@@ -25,7 +25,7 @@ Based on [hoangnd107/ios-swiftui-app-template](https://github.com/hoangnd107/ios
 1. Clone this repository and open it in VS Code. No Xcode, paid Apple membership or server is needed locally.
 2. Edit Swift sources and `project.yml`. The generated `.xcodeproj` stays out of Git.
 3. Review the affected source and follow `AGENTS.md`; broader automated suites are optional when explicitly requested.
-4. Commit and push. The **iPhone build and interaction preview** workflow builds the app, runs one short iPhone capture flow and separately packages an unsigned device build.
+4. Commit and push. The **iPhone build and interaction preview** workflow runs the focused redesign and relevant persistence/migration tests on iPhone 15 Pro, plus a separate unsigned device build.
 5. Use `gh run list`, `gh run view RUN_ID --log-failed`, then `gh run download RUN_ID --dir artifacts/RUN_ID`. Fix actual compiler/test errors and inspect actual screenshots before marking UI acceptance complete.
 
 `python scripts/inspect_ci.py` shows the latest run; add `--run RUN_ID --download` after completion to save run metadata, raw Actions logs, test summary JSON and all artifacts together. It performs no retries or source changes.

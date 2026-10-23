@@ -1,25 +1,44 @@
-# Native iPhone layout
+# Native iPhone interactions — 0.3.0
 
-The 0.2.3 revision restores the native navigation structure used in 0.1.0. Building with Xcode 27 lets system tab bars, navigation bars, toolbar buttons and partial-height sheets adopt the current Liquid Glass appearance.
+The app uses the native SwiftUI TabView, NavigationStack, toolbar, Menu/Picker, Form and alert presentations on an iOS/iPadOS 26 deployment minimum. Xcode 27 and the discovered iOS 27 runtime provide the system's current Liquid Glass design. No third-party UI dependency is added.
 
-References used:
+## Native controls and motion
 
-- [Apple: Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass): use standard components and avoid custom backgrounds that interfere with their materials and scroll-edge behavior.
-- [Apple: Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars): use a stable system navigation layer and audit content safe areas.
-- [Apple: Landmarks sample](https://developer.apple.com/documentation/swiftui/landmarks-building-an-app-with-liquid-glass) and [Build a SwiftUI app with the new design](https://developer.apple.com/videos/play/wwdc2025/323/): native toolbar grouping, partial-height sheets and bottom accessories.
-- [Apple: Tab view bottom accessory](https://developer.apple.com/documentation/swiftui/view/tabviewbottomaccessory(isenabled:content:)): let the system position temporary status immediately above the tab bar.
+- Sort restores the anchored Menu containing a Picker from v0.1.0. Category uses the same native selection mechanism, ordered All, Upcoming, Completed, Abandoned, Deleted. Its borderless accented label sits to the right of Assignments in a large-type List heading row; the compact pair uses the system's leading toolbar position without a shared background. There is no gray category rail. Workspace toolbar actions use adaptive primary foreground.
+- The large heading is actual scroll content and naturally leaves with the list. AssignmentHeadingLayout compares its measured bottom with the viewport's visible safe-area edge; only a compact Boolean changes. The native navigation bar keeps a fixed inline mode and receives ordinary leading title text after the large heading has left. NavigationTitle retains the semantic Back label. There are no title controller bridges, cumulative scroll estimates, bar-height mutations, timers or category changes driven by scrolling. A small geometric hysteresis avoids flicker at the edge, and pull-to-search returns the real heading to view.
+- The heading section sets vertical listSectionMargins to zero and explicit edge-specific listRowInsets for its title and search rows. The outer Menu retains a 44-point target. Actual accessibility geometry distinguished row padding from menu size; no negative offsets are used. Search uses a standard minimal UISearchBar below the heading, revealed by pulling the heading beyond its resting edge. A noninteractive zero-size view reads the existing UIScrollView's dragging/decelerating state through public parent views; it adds no recognizer. Filtering or layout alone cannot reveal search. The native text field drives the cached query, and a named accessibility action on the ordinary heading offers Search without a drag. The visible edge avoids double-counted navigation height. Compact text uses intrinsic width and normal navigation-bar type sizing.
+- All has three colored status headings in a flat, stable-ID List. Other categories truly filter the cached ordering and omit headings. There is no segmented control, scroll-to synchronization or horizontal category gesture.
+- A circle immediately toggles completion/restoration. The symbol replaces natively, a finite 0.45-second keyframe burst surrounds a completed circle, and the store supplies the existing success haptic. Upcoming retains a completed row for at most five seconds; a single cancellable presentation task expires rows, and leaving the tab clears them. Undo/restoration invalidates pending visibility. All moves the same UUID between status headings immediately.
+- Native toolbar item identifiers, a fresh activation generation on every tab change, scoped scale/opacity springs and symbol bounce keep repeated transitions responsive. Pages never wait for animation completion. The shared Add item has the same toolbar ID on both workspaces.
+- Detail and Settings destinations hide the tab bar at destination scope. Theme selection uses matched native zoom. Both new and existing editors use native push/pop so Back and its interactive gestures share the same draft protection; creation has no separate sheet-dismiss path. Clean navigation keeps the system's interactive back gesture. Dirty editors intercept the public navigation-item Back action and both public pop gestures to show a centered native Save / Discard Changes / Keep Editing alert.
+- Calendar pages use absolute month IDs and absolute day IDs. The selected background belongs only to the current page and exact date; its geometry is not implicitly animated between reused cells. Month translation remains animated. Commits happen immediately, and generation-guarded completion callbacks cannot overwrite newer interactions.
+- A public UIGestureRecognizerRepresentable wraps a horizontal-only native pan. It rejects vertical motion before recognition so the surrounding ScrollView can scroll; real date Buttons retain native tap cancellation when a pan wins. A horizontal manual gesture hides retained day details with blur/opacity; a cancellable 200 ms reveal follows settling. Arrows, Today, month selection and day taps cancel pending reveals immediately and overlap old/new details through the native blur-replace transition.
+- A fullscreen image uses one drag gesture: at 1x it can dismiss downward; above 1x it pans with image-fit bounds and spring edge correction. Pinch and double tap change scale, Close remains independent, and sharing uses the original file.
+- Reduce Motion removes app-controlled particles/bounce/spring translations and substitutes short opacity transitions. Native navigation remains under the system's accessibility policy. The app reads the system accessibility value; DEBUG synthetic captures can additionally request reduced app motion through its own environment key.
 
-## Implementation
+## Draft and deletion integrity
 
-- The system TabView owns all four navigation items, its glass, hit targets, selection feedback and safe-area layout. There is no replacement HStack, hidden tab bar or fixed-height overlay.
-- Pages switch immediately through native tab containment. The sequential fade-to-blank, toolbar-completion wait and hit-testing lock are removed. Native toolbar buttons and a scoped symbol bounce provide feedback without blocking selection.
-- Assignments uses the same native large navigation-title layout as Calendar. The hand-drawn List title row is removed; the system collapses the title during scrolling. Search uses the automatic navigation drawer rather than being forced visible.
-- A category tap owns the selected segment until the next deliberate scroll. Intermediate geometry callbacks cannot restore the previously visible category. Colored separators are ordinary native list rows and are the jump targets; they cannot pin over the first assignment's title. Short sections clamp to the available content naturally, without a viewport-sized empty tail.
-- Status actions use a real native sheet with one short detent, native prominent vertical buttons and the system sheet background/presentation. An outside-tap recognizer closes the native presentation without replacing its dimming view, safe areas or animation.
-- Undo uses the system tab accessory on iOS 26.1 and later, with the iOS 26.0 safe-area fallback retained. Its content has no second glass layer or hard-coded tab-bar-height padding.
+Deleted is a query dimension over deletedAt, not a new AssignmentStatus. Restoration clears only the deletion timestamp, preserves disposition/content/attachments, increments revision and remains undoable. Attachment pruning retains paths from every persisted record, including tombstones.
 
-## Runtime inspection
+New and existing editors both stage field and attachment changes locally. Save validates the complete result and commits once. A three-way merge preserves independently changed fields and external attachment additions; conflicting changes fail visibly with the draft retained. Discard removes only newly imported files. Previously attached files are removed only after a successful commit and only when no persisted record references them.
 
-The focused preview requests the exact **iPhone 15 Pro** device type on an installed iOS 27 runtime, creating the simulator if necessary. It captures the initial title/tab placement, repeated category returns, pull-to-search, compact heading, all four pages, active/terminal status sheets, Undo and the bottom of the editor.
+Frozen SchemaV1, migration, backup decoding, IDs, reminder reconciliation, AI confirmation and widget identity are unchanged.
 
-The capture also retains native tab/item frames, checks that the final row clears the tab bar, and compares Assignments/Calendar title positions. These screenshots establish layout evidence; they do not certify physical-device haptic feel or animation frame rate.
+## Public Apple references
+
+- [Adopting Liquid Glass](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)
+- [Landmarks sample](https://developer.apple.com/documentation/swiftui/landmarks-building-an-app-with-liquid-glass)
+- [Build a SwiftUI app with the new design](https://developer.apple.com/videos/play/wwdc2025/323/)
+- [Native tab accessory](https://developer.apple.com/documentation/swiftui/view/tabviewbottomaccessory(isenabled:content:))
+- [Navigation item Back action](https://developer.apple.com/documentation/uikit/uinavigationitem/backaction)
+- [Interactive edge pop](https://developer.apple.com/documentation/uikit/uinavigationcontroller/interactivepopgesturerecognizer)
+- [Interactive content pop](https://developer.apple.com/documentation/uikit/uinavigationcontroller/interactivecontentpopgesturerecognizer)
+- [Blur-replace transition](https://developer.apple.com/documentation/swiftui/blurreplacetransition)
+- [Type-erased native transition](https://developer.apple.com/documentation/swiftui/anytransition/init(_:))
+- [UIKit gesture recognizers in SwiftUI](https://developer.apple.com/documentation/swiftui/uigesturerecognizerrepresentable)
+- [Native gesture priority](https://developer.apple.com/documentation/uikit/preferring-one-gesture-over-another)
+- [Native section margins](https://developer.apple.com/documentation/swiftui/view/listsectionmargins%28_%3A_%3A%29)
+- [Native row edge insets](https://developer.apple.com/documentation/swiftui/view/listrowinsets%28_%3A_%3A%29)
+- [iOS 26 release notes — vertical row inset behavior](https://developer.apple.com/documentation/ios-ipados-release-notes/ios-ipados-26-release-notes)
+
+Runtime acceptance and any failures are recorded in STATUS.md. Screenshots establish layout and state evidence, not physical-device haptic feel or frame-rate guarantees.
